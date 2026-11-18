@@ -893,6 +893,11 @@
         <button type="button" class="season-tab" data-dash-tab="calendar">Calendar</button>
       </div>
 
+      <div class="card card-pad" style="margin-bottom:16px;">
+        <h2 id="portal-calendar-heading">Portal calendar entries</h2>
+        <div id="portal-calendar-entries" role="region" aria-labelledby="portal-calendar-heading" tabindex="0" style="max-height:360px;overflow:auto;"></div>
+      </div>
+
       <div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;background:var(--paper-raised);box-shadow:var(--shadow-sm);">
         <iframe src="https://calendar.google.com/calendar/embed?src=c_3e8acdf215a511e17b39aada39d3e067043074318f6ac6d7de4793bfe6e0188f%40group.calendar.google.com&ctz=America%2FNew_York" style="border:0;display:block;width:100%;" width="800" height="600" frameborder="0" scrolling="no"></iframe>
       </div>
@@ -2248,14 +2253,8 @@
     if (changed) saveDB(db);
   })();
   (function migratePrototypeAlbums() {
-    var oldPrototypeTitles = ["Fall Gallery Opening", "Poetry Under the Banyans", "Community Mural Unveiling", "Grantee Networking Mixer"];
     var newEventTitles = ["North Dade Principal Cohort", "South Dade Principal Cohort", "Central Principal Cohort", "Miami Gardens Youth Music Festival", "South Dade Youth Music Festival", "Downtown Youth Music Festival", "Program Director Cohort", "Teaching Artist Cohort", "Leadership Cohort", "Interlochen", "Marketing Cohort", "Data Cohort"];
     var changed = false;
-    if (db.albums.some(function (a) { return oldPrototypeTitles.indexOf(a.title) !== -1; })) {
-      db.albums = db.albums.filter(function (a) { return oldPrototypeTitles.indexOf(a.title) === -1; });
-      db.photos = db.photos.filter(function (p) { return oldPrototypeTitles.indexOf(p.eventTag) === -1; });
-      changed = true;
-    }
     newEventTitles.forEach(function (title, i) {
       if (!db.albums.some(function (a) { return a.title === title; })) {
         db.albums.push({ id: "al-new" + (i + 1), title: title, description: "", date: "", link: "", createdAt: todayISO(0) });
@@ -2315,16 +2314,14 @@
   if (!db.financeDocuments) { db.financeDocuments = seedDB().financeDocuments; saveDB(db); }
   if (!db.orgContacts) { db.orgContacts = seedDB().orgContacts; saveDB(db); }
   (function migrateExtraOrgContacts() {
-    var extraIds = ["oc7", "oc8", "oc9", "oc10", "oc11", "oc12"];
-    var missingIds = extraIds.filter(function (id) { return !db.orgContacts.some(function (c) { return c.id === id; }); });
-    var changed = false;
-    if (missingIds.length) {
-      db.orgContacts = db.orgContacts.concat(seedDB().orgContacts.filter(function (c) { return missingIds.indexOf(c.id) !== -1; }));
-      changed = true;
+    if (db.extraOrgContactsSeeded) return;
+    var extraIds = ["oc8", "oc9", "oc10", "oc11", "oc12"];
+    // Earlier versions added these contacts together, so any one is evidence of prior seeding.
+    if (!db.orgContacts.some(function (c) { return extraIds.indexOf(c.id) !== -1; })) {
+      db.orgContacts = db.orgContacts.concat(seedDB().orgContacts.filter(function (c) { return extraIds.indexOf(c.id) !== -1; }));
     }
-    var oldHiddenJean = db.orgContacts.filter(function (c) { return c.id === "oc7" && !c.visible; })[0];
-    if (oldHiddenJean) { oldHiddenJean.visible = true; changed = true; }
-    if (changed) saveDB(db);
+    db.extraOrgContactsSeeded = true;
+    saveDB(db);
   })();
   if (!db.comments) { db.comments = seedDB().comments; saveDB(db); }
   (function migratePostSubject() {
@@ -2580,13 +2577,19 @@
     var email = $("#inv-email").value.trim();
     var pass = $("#inv-pass").value;
     var errEl = $("#invite-error");
+    var adminEmailAllowed = isAdminAllowedEmail(email);
+    if (currentInvite.role === "admin" && !adminEmailAllowed) {
+      errEl.textContent = "Administrator invites require an approved Arts Access Miami staff email.";
+      errEl.style.display = "block";
+      return;
+    }
     if (db.accounts.some(function (a) { return a.email.toLowerCase() === email.toLowerCase(); })) {
       errEl.textContent = "An account with this email already exists. Go back and sign in instead.";
       errEl.style.display = "block";
       return;
     }
     errEl.style.display = "none";
-    var role = isAdminAllowedEmail(email) ? "admin" : currentInvite.role;
+    var role = adminEmailAllowed ? "admin" : currentInvite.role;
     var org = role === "grantee" ? currentInvite.org : "Arts Access Miami";
     var account = { email: email, password: pass, role: role, name: name, org: org, orgAdmin: false, cohorts: [], regions: [], notifications: { email: true } };
     db.accounts.push(account);
@@ -2728,6 +2731,7 @@
     if (view === "dashboard") renderDashboard();
     if (view === "admin-dashboard") renderAdminDashboard();
     if (view === "grantees") renderGrantees();
+    if (view === "calendar") renderPortalCalendar();
     if (view === "meetings") renderMeetings();
     if (view === "gallery") renderGallery();
     if (view === "feed") renderFeed();
@@ -2841,6 +2845,16 @@
     return e.org === session.org; // own pending/rejected submissions only
   }
   function eventsOn(iso) { return db.events.filter(function (e) { return e.date === iso && canSeeEvent(e); }); }
+  function renderPortalCalendar() {
+    var container = $("#portal-calendar-entries");
+    var entries = db.events.filter(canSeeEvent).sort(function (a, b) {
+      return b.date.localeCompare(a.date) || (a.time || "").localeCompare(b.time || "");
+    });
+    container.innerHTML = entries.length ? entries.map(function (e) {
+      return '<div class="row-sub" style="margin-top:10px;">' + fmtDateLong(e.date) + '</div>' + eventDetailHtml(e);
+    }).join("") : '<div class="empty-state">No portal calendar entries yet.</div>';
+    bindEventDetailActions(container, renderPortalCalendar);
+  }
   function statusBadge(e) {
     var status = e.status || "approved";
     if (status === "pending") return '<span class="status-chip warning"><span class="dot"></span>Pending</span>';
@@ -3107,6 +3121,7 @@
     closeModal("add-event");
     toast(isAdmin ? "Added to the calendar" : "Submitted for admin approval — it will post once approved");
     updateApprovalsBadge();
+    if ($("#view-calendar").classList.contains("active")) renderPortalCalendar();
     if ($("#view-dashboard").classList.contains("active")) renderDashboard();
     if ($("#view-admin-dashboard").classList.contains("active")) renderAdminDashboard();
     if ($("#view-admin-accounts").classList.contains("active")) renderApprovals();
@@ -3287,6 +3302,7 @@
     var identity = session.role === "admin" ? "Arts Access Miami" : session.org;
     db.comments.push({ id: "cmt" + Date.now() + Math.random().toString(16).slice(2), postId: postId, author: identity, authorRole: session.role, text: text, ts: Date.now() });
     saveDB(db);
+    input.value = "";
     expandedComments[postId] = true;
     renderFeed();
   }
@@ -3827,14 +3843,17 @@
 
     $("#report-file-input").addEventListener("change", function (e) {
       var file = e.target.files && e.target.files[0];
-      if (!file || !currentReportUploadItem) return;
+      var item = currentReportUploadItem;
+      if (!file || !item) return;
+      var itemFiles = getWorkingItemFiles(stage.key);
       var reader = new FileReader();
       reader.onload = function () {
-        getWorkingItemFiles(stage.key)[currentReportUploadItem] = { id: "rf" + Date.now() + Math.random().toString(16).slice(2), name: file.name, size: humanSize(file.size), src: reader.result };
-        renderReportChecklist(stage);
+        if (reportWorkingFilesByStage[stage.key] !== itemFiles) return;
+        itemFiles[item] = { id: "rf" + Date.now() + Math.random().toString(16).slice(2), name: file.name, size: humanSize(file.size), src: reader.result };
+        if (activeReportStage === stage.key) renderReportChecklist(stage);
       };
       reader.readAsDataURL(file);
-      $("#report-file-input").value = "";
+      e.target.value = "";
     });
 
     $("#report-submit-btn").addEventListener("click", function () {
