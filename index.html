@@ -1617,7 +1617,7 @@
   </div>
 </div>
 
-<div class="overlay" id="modal-edit-org-profile">
+<div class="overlay" id="modal-edit-org-profile" style="z-index:101;">
   <div class="modal" style="max-width:640px;">
     <div class="modal-head"><h3>Edit profile — <span id="eop-org-name"></span></h3><button class="close-x" data-close-modal><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button></div>
     <div class="modal-body">
@@ -2443,6 +2443,10 @@
 
   var session = loadSession();
   if (session && session.role === "partner") { clearSession(); session = null; }
+  if (session && session.role === "grantee") {
+    if (ORG_RENAME_MAP[session.org]) { session.org = ORG_RENAME_MAP[session.org]; saveSession(session); }
+    else if (ORG_RENAME_DROPPED.indexOf(session.org) !== -1) { clearSession(); session = null; }
+  }
 
   /* ============================= UTIL ============================= */
   function $(sel, root) { return (root || document).querySelector(sel); }
@@ -5360,6 +5364,7 @@
     $("#acct-settings-name").value = acct ? acct.name : session.name;
     $("#acct-settings-title").value = acct ? (acct.title || "") : "";
     $("#acct-settings-phone").value = acct ? (acct.phone || "") : "";
+    $("#acct-settings-delete-btn").style.display = isSuperAdmin() ? "none" : "";
   }
 
   $("#acct-settings-save-btn").addEventListener("click", function () {
@@ -5381,6 +5386,10 @@
 
   var pendingDeleteAccountConfirm = false;
   $("#acct-settings-delete-btn").addEventListener("click", function () {
+    if (isSuperAdmin()) {
+      toast("The main operations account can't be deleted");
+      return;
+    }
     if (!pendingDeleteAccountConfirm) {
       pendingDeleteAccountConfirm = true;
       this.textContent = "Click again to confirm deletion";
