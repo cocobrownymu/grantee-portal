@@ -1829,6 +1829,15 @@
     "Young Musicians Unite"
   ];
 
+  var ORG_RENAME_MAP = {
+    "Little Haiti Cultural Arts Center": "Vocal Youth Miami",
+    "Overtown Music Collective": "Miami Music Project",
+    "Wynwood Youth Film Lab": "Achieve Miami",
+    "Miami Youth Ballet": "Arts for Learning",
+    "Coconut Grove Poets Circle": "Young Musicians Unite"
+  };
+  var ORG_RENAME_DROPPED = ["Allapattah Mural Project"];
+
   var SEASONS = ["Fall", "Spring"];
 
   var COHORTS = ["Principal Cohort", "Program Director Cohort", "Leadership Cohort", "Youth Advocacy Council", "Marketing Cohort", "Teaching Artist Cohort", "Data Cohort"];
@@ -2311,8 +2320,12 @@
       db.orgContacts = db.orgContacts.concat(seedDB().orgContacts.filter(function (c) { return missingIds.indexOf(c.id) !== -1; }));
       changed = true;
     }
-    var oldHiddenJean = db.orgContacts.filter(function (c) { return c.id === "oc7" && !c.visible; })[0];
-    if (oldHiddenJean) { oldHiddenJean.visible = true; changed = true; }
+    if (!db.oc7VisibilityFixed) {
+      var oldHiddenJean = db.orgContacts.filter(function (c) { return c.id === "oc7" && !c.visible; })[0];
+      if (oldHiddenJean) oldHiddenJean.visible = true;
+      db.oc7VisibilityFixed = true;
+      changed = true;
+    }
     if (changed) saveDB(db);
   })();
   if (!db.comments) { db.comments = seedDB().comments; saveDB(db); }
@@ -2379,6 +2392,55 @@
     });
     if (changed) saveDB(db);
   })();
+  (function migrateOrgRename() {
+    if (db.orgRenameMigrated) return;
+    function renameOrgField(list, field) {
+      list.forEach(function (item) {
+        if (item[field] && ORG_RENAME_MAP[item[field]]) item[field] = ORG_RENAME_MAP[item[field]];
+      });
+    }
+    renameOrgField(db.events, "org");
+    renameOrgField(db.posts, "org");
+    renameOrgField(db.comments, "author");
+    renameOrgField(db.reports, "org");
+    renameOrgField(db.photoshootAlbums, "org");
+    renameOrgField(db.accounts, "org");
+    renameOrgField(db.financeDocuments, "org");
+    renameOrgField(db.financeDocuments, "uploadedBy");
+    renameOrgField(db.orgContacts, "org");
+    renameOrgField(db.disbursements, "org");
+    renameOrgField(db.meetingAttendance, "org");
+    renameOrgField(db.inviteRequests, "org");
+    renameOrgField(db.marketingMaterials, "org");
+    renameOrgField(db.calendarEventRequests, "org");
+    renameOrgField(db.reportExtras, "org");
+    renameOrgField(db.invites, "org");
+    renameOrgField(db.notifications, "org");
+
+    [db.orgProfiles, db.grantAmounts].forEach(function (map) {
+      for (var oldName in ORG_RENAME_MAP) {
+        if (map.hasOwnProperty(oldName)) {
+          map[ORG_RENAME_MAP[oldName]] = map[oldName];
+          delete map[oldName];
+        }
+      }
+    });
+
+    if (db.removedOrgs.length) {
+      db.removedOrgs = db.removedOrgs.map(function (o) { return ORG_RENAME_MAP[o] || o; });
+    }
+
+    // The dropped org no longer has a roster slot at all (unlike a manually removed org),
+    // so purge its logins/pending invites the same way removeOrgFromPortal does, keeping historical records.
+    ORG_RENAME_DROPPED.forEach(function (org) {
+      db.accounts = db.accounts.filter(function (a) { return !(a.role === "grantee" && a.org === org); });
+      db.invites = db.invites.filter(function (i) { return !(i.role === "grantee" && i.org === org && !i.usedAt); });
+    });
+
+    db.orgRenameMigrated = true;
+    saveDB(db);
+  })();
+
   var session = loadSession();
   if (session && session.role === "partner") { clearSession(); session = null; }
 
@@ -2386,6 +2448,13 @@
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]; }); }
+  function bindActivatable(el, handler) {
+    el.addEventListener("click", handler);
+    el.addEventListener("keydown", function (e) {
+      if (e.target !== el) return;
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handler(e); }
+    });
+  }
   function initials(name) {
     var parts = String(name).trim().split(/\s+/);
     return ((parts[0] || "")[0] || "") .toUpperCase()+ ((parts[1] || "")[0] || "").toUpperCase();
@@ -3166,7 +3235,8 @@
       link: $("#req-ev-link").value.trim(),
       requestedByName: session.name,
       requestedByEmail: session.email,
-      submittedAt: todayISO(0)
+      submittedAt: todayISO(0),
+      status: "pending"
     });
     saveDB(db);
     closeModal("request-event");
@@ -3551,7 +3621,7 @@
     var regions = ORG_REGIONS[org] || [];
     var p = db.orgProfiles[org];
     var programPreview = (p.programs || []).slice(0, 2).join(", ") + (p.programs.length > 2 ? "…" : "");
-    return '<div class="card org-card" style="cursor:pointer;" data-open-directory-profile="' + esc(org) + '">' +
+    return '<div class="card org-card" style="cursor:pointer;" tabindex="0" role="button" aria-label="View directory profile for ' + esc(org) + '" data-open-directory-profile="' + esc(org) + '">' +
       '<div class="org-avatar">' + initials(org) + '</div>' +
       '<div class="org-name">' + esc(org) + '</div>' +
       '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">' + tierBadge(org) + regions.map(function (r) { return '<span class="tag-chip">' + esc(r) + '</span>'; }).join("") + '</div>' +
@@ -3621,7 +3691,7 @@
       : '<div class="empty-state" style="grid-column:1/-1;">No organizations match your search.</div>';
 
     $all("[data-open-directory-profile]", $("#directory-grid")).forEach(function (card) {
-      card.addEventListener("click", function () { openDirectoryProfile(card.getAttribute("data-open-directory-profile")); });
+      bindActivatable(card, function () { openDirectoryProfile(card.getAttribute("data-open-directory-profile")); });
     });
   }
 
@@ -3697,20 +3767,25 @@
     }
     return reportWorkingFilesByStage[stage];
   }
-  function reviewStatusChip(sub, stage) {
+  function reportRequiredItemNames(org, stage) {
+    var docExtras = reportExtrasFor(org, stage.key).filter(function (x) { return x.type === "document"; });
+    return stage.requiredItems.concat(docExtras.map(function (x) { return x.title; }));
+  }
+  function reviewStatusChip(sub, stage, org) {
     if (!sub || !sub.submittedAt) return null;
     var itemReviews = sub.itemReviews || {};
-    var uploadedItems = stage.requiredItems.filter(function (item) { return sub.itemFiles && sub.itemFiles[item]; });
+    var requiredNames = reportRequiredItemNames(org, stage);
+    var uploadedItems = requiredNames.filter(function (item) { return sub.itemFiles && sub.itemFiles[item]; });
     var rejectedItems = uploadedItems.filter(function (item) { return itemReviews[item] === "rejected"; });
     if (rejectedItems.length) return { label: "Changes Requested", tone: "critical" };
     var approvedItems = uploadedItems.filter(function (item) { return itemReviews[item] === "approved"; });
-    if (uploadedItems.length === stage.requiredItems.length && approvedItems.length === uploadedItems.length) return { label: "Approved", tone: "good" };
+    if (uploadedItems.length === requiredNames.length && approvedItems.length === uploadedItems.length) return { label: "Approved", tone: "good" };
     return { label: "Pending Review", tone: "warning" };
   }
   function reportStatus(stageKey) {
     var sub = getSubmission(session.org, stageKey);
     var stage = REPORT_STAGES.filter(function (s) { return s.key === stageKey; })[0];
-    if (sub && sub.submittedAt) return reviewStatusChip(sub, stage);
+    if (sub && sub.submittedAt) return reviewStatusChip(sub, stage, session.org);
     return statusFor(stage.due);
   }
 
@@ -3728,15 +3803,16 @@
     });
   }
 
-  function reportItemsHave(sub, stage) {
+  function reportItemsHave(sub, stage, org) {
     if (!sub || !sub.itemFiles) return 0;
-    return stage.requiredItems.filter(function (item) { return !!sub.itemFiles[item]; }).length;
+    return reportRequiredItemNames(org, stage).filter(function (item) { return !!sub.itemFiles[item]; }).length;
   }
   function reportCompleteness(org, stageKey) {
     var sub = getSubmission(org, stageKey);
     var stage = REPORT_STAGES.filter(function (s) { return s.key === stageKey; })[0];
-    var have = reportItemsHave(sub, stage);
-    return Math.max(0, Math.min(100, Math.round((have / stage.requiredItems.length) * 100)));
+    var have = reportItemsHave(sub, stage, org);
+    var total = reportRequiredItemNames(org, stage).length;
+    return Math.max(0, Math.min(100, Math.round((have / total) * 100)));
   }
 
   function reportStageAggregate(stageKey) {
@@ -3777,15 +3853,16 @@
       var sub = getSubmission(org, stage.key);
       var isSubmitted = !!(sub && sub.submittedAt);
       if (isSubmitted) submittedCount++;
-      var st = isSubmitted ? reviewStatusChip(sub, stage) : statusFor(stage.due);
+      var st = isSubmitted ? reviewStatusChip(sub, stage, org) : statusFor(stage.due);
       var pct = reportCompleteness(org, stage.key);
-      var fileCount = reportItemsHave(sub, stage);
+      var fileCount = reportItemsHave(sub, stage, org);
+      var requiredCount = reportRequiredItemNames(org, stage).length;
       return '<div class="org-row" style="cursor:pointer;" data-view-org-report="' + esc(org) + '">' +
         '<div class="org-avatar">' + initials(org) + '</div>' +
         '<div class="org-main"><div class="row-title">' + esc(org) + ' ' + tierBadge(org) + '</div>' +
         '<div class="row-sub">' + (isSubmitted ? "Submitted " + fmtDateLong(sub.submittedAt) : "Not yet submitted") + '</div>' +
         '<div class="materials-meter"><div class="materials-bar"><div class="materials-fill" style="width:' + pct + '%;"></div></div>' +
-        '<span class="materials-pct tnum">' + pct + '% of materials (' + fileCount + '/' + stage.requiredItems.length + ')</span></div>' +
+        '<span class="materials-pct tnum">' + pct + '% of materials (' + fileCount + '/' + requiredCount + ')</span></div>' +
         '</div>' +
         '<span class="status-chip ' + st.tone + '"><span class="dot"></span>' + st.label + '</span>' +
         '</div>';
@@ -3823,7 +3900,7 @@
 
     var html = "";
     if (sub) {
-      var rchip = reviewStatusChip(sub, stage);
+      var rchip = reviewStatusChip(sub, stage, org);
       html += '<p class="sub" style="margin-bottom:8px;">Submitted ' + fmtDateLong(sub.submittedAt) + '</p>' +
         (rchip ? '<span class="status-chip ' + rchip.tone + '"><span class="dot"></span>' + esc(rchip.label) + '</span>' : '') +
         (sub.reviewNote ? '<p class="field-hint" style="margin-top:8px;">Note to organization: ' + esc(sub.reviewNote) + '</p>' : '') +
@@ -4013,32 +4090,11 @@
       '<button type="button" class="btn btn-primary" id="report-submit-btn">' + (sub && sub.submittedAt ? "Update submission" : "Submit " + esc(stage.label)) + '</button>' +
       '</div>';
 
-    var otherExtras = reportExtrasFor(session.org, stage.key).filter(function (x) { return x.type !== "document"; });
-    if (otherExtras.length) {
-      html += '<div class="card card-pad" style="margin-top:16px;"><h4 style="font-size:13px;margin-bottom:10px;">Materials &amp; tasks from Arts Access Miami</h4>' +
-        otherExtras.map(function (x) {
-          var actionHtml = x.type === "material"
-            ? (x.link ? '<a href="' + esc(x.link) + '" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">View</a>' : '')
-            : '<button type="button" class="btn btn-sm ' + (x.done ? "btn-secondary" : "btn-primary") + '" data-toggle-report-task="' + x.id + '">' + (x.done ? "Mark not done" : "Mark as done") + '</button>';
-          return '<div class="req-item ' + (x.type === "task" && x.done ? "got" : "") + '" style="flex-wrap:wrap;">' +
-            '<div style="flex:1;min-width:0;"><strong>' + esc(x.title) + '</strong>' + (x.description ? '<div class="row-sub">' + esc(x.description) + '</div>' : '') + '</div>' +
-            actionHtml +
-            '</div>';
-        }).join("") + '</div>';
-    }
+    html += '<div id="report-extras-block"></div>';
 
     $("#report-panes").innerHTML = html;
     renderReportChecklist(stage);
-
-    $all("[data-toggle-report-task]", $("#report-panes")).forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var x = db.reportExtras.filter(function (r) { return r.id === btn.getAttribute("data-toggle-report-task"); })[0];
-        if (!x) return;
-        x.done = !x.done;
-        saveDB(db);
-        renderReportPane();
-      });
-    });
+    renderReportExtrasBlock(stage);
 
     $("#report-file-input").addEventListener("change", function (e) {
       var file = e.target.files && e.target.files[0];
@@ -4082,6 +4138,34 @@
       saveDB(db);
       toast((existing ? "Updated " : "Submitted ") + stage.label);
       renderReporting();
+    });
+  }
+
+  function renderReportExtrasBlock(stage) {
+    var container = $("#report-extras-block");
+    if (!container) return;
+    var otherExtras = reportExtrasFor(session.org, stage.key).filter(function (x) { return x.type !== "document"; });
+    container.innerHTML = otherExtras.length
+      ? '<div class="card card-pad" style="margin-top:16px;"><h4 style="font-size:13px;margin-bottom:10px;">Materials &amp; tasks from Arts Access Miami</h4>' +
+        otherExtras.map(function (x) {
+          var actionHtml = x.type === "material"
+            ? (x.link ? '<a href="' + esc(x.link) + '" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">View</a>' : '')
+            : '<button type="button" class="btn btn-sm ' + (x.done ? "btn-secondary" : "btn-primary") + '" data-toggle-report-task="' + x.id + '">' + (x.done ? "Mark not done" : "Mark as done") + '</button>';
+          return '<div class="req-item ' + (x.type === "task" && x.done ? "got" : "") + '" style="flex-wrap:wrap;">' +
+            '<div style="flex:1;min-width:0;"><strong>' + esc(x.title) + '</strong>' + (x.description ? '<div class="row-sub">' + esc(x.description) + '</div>' : '') + '</div>' +
+            actionHtml +
+            '</div>';
+        }).join("") + '</div>'
+      : '';
+
+    $all("[data-toggle-report-task]", container).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var x = db.reportExtras.filter(function (r) { return r.id === btn.getAttribute("data-toggle-report-task"); })[0];
+        if (!x) return;
+        x.done = !x.done;
+        saveDB(db);
+        renderReportExtrasBlock(stage);
+      });
     });
   }
 
@@ -4382,7 +4466,7 @@
       var openDl = db.events.filter(function (e) { return e.type === "deadline" && (e.org === org || e.org === "All grantees") && daysDiff(e.date) >= 0; }).length;
       var overdueDl = db.events.filter(function (e) { return e.type === "deadline" && e.org === org && daysDiff(e.date) < 0; }).length;
       var postCount = db.posts.filter(function (p) { return p.org === org; }).length;
-      return '<div class="card org-card" style="cursor:pointer;" data-open-grantee-profile="' + esc(org) + '"><div class="org-avatar">' + initials(org) + '</div>' +
+      return '<div class="card org-card" style="cursor:pointer;" tabindex="0" role="button" aria-label="View grantee profile for ' + esc(org) + '" data-open-grantee-profile="' + esc(org) + '"><div class="org-avatar">' + initials(org) + '</div>' +
         '<div class="org-name">' + esc(org) + '</div>' +
         '<div style="margin-top:6px;">' + tierBadge(org) + '</div>' +
         '<div class="org-metrics">' +
@@ -4401,14 +4485,14 @@
       });
     });
     $all("[data-open-grantee-profile]", $("#org-card-grid")).forEach(function (card) {
-      card.addEventListener("click", function () { openGranteeProfile(card.getAttribute("data-open-grantee-profile")); });
+      bindActivatable(card, function () { openGranteeProfile(card.getAttribute("data-open-grantee-profile")); });
     });
   }
 
   function reportStatusForOrg(org, stageKey) {
     var stage = REPORT_STAGES.filter(function (s) { return s.key === stageKey; })[0];
     var sub = getSubmission(org, stageKey);
-    if (sub && sub.submittedAt) return reviewStatusChip(sub, stage);
+    if (sub && sub.submittedAt) return reviewStatusChip(sub, stage, org);
     return statusFor(stage.due);
   }
 
@@ -5311,6 +5395,7 @@
     saveDB(db);
     clearSession();
     session = null;
+    reportWorkingFilesByStage = {};
     $("#app-shell").classList.remove("active");
     $("#app-shell").removeAttribute("data-role");
     $("#login-screen").style.display = "flex";
