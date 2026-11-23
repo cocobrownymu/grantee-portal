@@ -212,16 +212,6 @@
   .login-foot-link:hover { text-decoration: underline; }
   .login-links-row { display: flex; justify-content: space-between; margin-top: -6px; margin-bottom: 18px; }
 
-  .login-tabs { display: flex; gap: 6px; background: var(--paper-sunken); border-radius: 10px; padding: 4px; margin-bottom: 22px; }
-  .login-tab { flex: 1; text-align: center; padding: 8px 10px; border-radius: 8px; border: none; background: transparent; cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--muted); }
-  .login-tab.active { background: var(--paper-raised); color: var(--ink); box-shadow: var(--shadow-sm); }
-  #tab-admin-btn.active { background: var(--staff-accent-soft); color: var(--staff-accent); }
-
-  /* Administrator sign-in pane gets the same royal-blue staff accent used throughout the admin app */
-  #pane-admin .btn-primary { background: var(--staff-accent); color: var(--staff-accent-ink); }
-  #pane-admin .btn-primary:hover { background: var(--staff-accent-hover); }
-  #pane-admin .field select:focus, #pane-admin .field input:focus { border-color: var(--staff-accent); }
-  #pane-admin .login-foot-link { color: var(--staff-accent); }
   .login-pane { display: none; }
   .login-pane.active { display: block; }
 
@@ -624,14 +614,9 @@
     <p style="font-size:12.5px;color:var(--muted);font-style:italic;margin:-14px 0 20px;">Uniting Miami through the power of arts education.</p>
 
     <div id="login-normal-mode">
-      <div class="login-tabs">
-        <button type="button" class="login-tab active" id="tab-grantee-btn">Grantee</button>
-        <button type="button" class="login-tab" id="tab-admin-btn">Administrator</button>
-      </div>
-
-      <div class="login-pane active" id="pane-grantee">
-        <h1>Sign in</h1>
-        <p class="lede">Enter the email and password from your invite to reach your dashboard, calendar, and grant documents.</p>
+      <div class="login-pane active" id="pane-login">
+        <h1>Arts Access Portal Login</h1>
+        <p class="lede">Enter the email and password from your invite to reach your portal.</p>
         <form id="login-form" autocomplete="off">
           <div class="field">
             <label for="f-email">Email</label>
@@ -641,7 +626,7 @@
             <label for="f-pass">Password</label>
             <input id="f-pass" type="password" placeholder="••••••••••" required />
           </div>
-          <p class="field-hint" id="grantee-login-error" style="display:none;color:var(--critical);"></p>
+          <p class="field-hint" id="login-error" style="display:none;color:var(--critical);"></p>
           <div class="login-links-row">
             <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">
               <input type="checkbox" id="f-remember" style="width:auto;" checked /> Keep me signed in
@@ -649,31 +634,6 @@
             <a class="login-foot-link" id="forgot-link">Forgot password?</a>
           </div>
           <button type="submit" class="btn btn-primary btn-block">Sign in to portal</button>
-          <button type="button" class="btn btn-ghost btn-block" id="demo-fill-btn" style="margin-top:8px;">Fill demo credentials</button>
-        </form>
-      </div>
-
-      <div class="login-pane" id="pane-admin">
-        <h1>Staff sign in</h1>
-        <p class="lede">For Arts Access Miami program staff who oversee grantees across the portal.</p>
-        <form id="login-form-admin" autocomplete="off">
-          <div class="field">
-            <label for="fa-email">Staff email</label>
-            <input id="fa-email" type="email" placeholder="name@artsaccessmiami.org" required />
-          </div>
-          <div class="field">
-            <label for="fa-pass">Password</label>
-            <input id="fa-pass" type="password" placeholder="••••••••••" required />
-          </div>
-          <p class="field-hint" id="admin-login-error" style="display:none;color:var(--critical);"></p>
-          <div class="login-links-row">
-            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">
-              <input type="checkbox" id="fa-remember" style="width:auto;" checked /> Keep me signed in
-            </label>
-            <a class="login-foot-link" id="forgot-link-admin">Forgot password?</a>
-          </div>
-          <button type="submit" class="btn btn-primary btn-block">Sign in as administrator</button>
-          <button type="button" class="btn btn-ghost btn-block" id="demo-fill-admin-btn" style="margin-top:8px;">Fill demo credentials</button>
         </form>
       </div>
 
@@ -902,6 +862,18 @@
         <iframe src="https://calendar.google.com/calendar/embed?src=c_3e8acdf215a511e17b39aada39d3e067043074318f6ac6d7de4793bfe6e0188f%40group.calendar.google.com&ctz=America%2FNew_York" style="border:0;display:block;width:100%;" width="800" height="600" frameborder="0" scrolling="no"></iframe>
       </div>
 
+      <div class="card" id="cal-event-requests-card" style="margin-top:18px;display:none;">
+        <div class="card-head"><h3>Calendar Event Requests</h3><span class="count" id="cal-event-requests-count"></span></div>
+        <p class="sub" style="padding:14px 18px 0;">Requests from grantees to add an event to the calendar. Accepting adds it to the calendar; declining marks it denied. Grantees see the status either way.</p>
+        <div id="cal-event-requests-list"></div>
+      </div>
+
+      <div class="card" id="cal-my-requests-card" style="margin-top:18px;display:none;">
+        <div class="card-head"><h3>My Calendar Requests</h3></div>
+        <p class="sub" style="padding:14px 18px 0;">Events you've requested to add to the calendar, and their status.</p>
+        <div id="cal-my-requests-list"></div>
+      </div>
+
     </section>
 
     <!-- ---------- GALLERY ---------- -->
@@ -972,7 +944,7 @@
         <span class="sub" id="directory-count"></span>
       </div>
 
-      <div id="directory-grid" style="display:flex;flex-direction:column;gap:14px;"></div>
+      <div id="directory-grid" class="org-card-grid"></div>
     </section>
 
     <!-- ---------- REPORTING ---------- -->
@@ -1340,9 +1312,23 @@
         <div class="card-pad" id="settings-privacy-body"></div>
       </div>
 
-      <div class="card">
+      <div class="card" style="margin-bottom:18px;">
         <div class="card-head"><h3>Account</h3></div>
         <div class="card-pad" id="settings-account-info"></div>
+        <div class="card-pad" style="padding-top:0;">
+          <div class="field"><label for="acct-settings-name">Name</label><input id="acct-settings-name" /></div>
+          <div class="field"><label for="acct-settings-title">Title</label><input id="acct-settings-title" placeholder="e.g. Program Director" /></div>
+          <div class="field"><label for="acct-settings-phone">Phone</label><input id="acct-settings-phone" placeholder="(305) 555-0100" /></div>
+          <button type="button" class="btn btn-primary btn-sm" id="acct-settings-save-btn">Save changes</button>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:var(--critical);">
+        <div class="card-head"><h3 style="color:var(--critical);">Delete Account</h3></div>
+        <div class="card-pad">
+          <p class="sub" style="margin-bottom:10px;">Permanently delete your portal account and sign out. This cannot be undone.</p>
+          <button type="button" class="btn btn-secondary btn-sm" id="acct-settings-delete-btn" style="color:var(--critical);border-color:var(--critical);">Delete my account</button>
+        </div>
       </div>
     </section>
 
@@ -1411,6 +1397,36 @@
     <div class="modal-foot">
       <button class="btn btn-ghost" data-close-modal>Cancel</button>
       <button class="btn btn-primary" id="event-save-btn">Save to calendar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-request-event">
+  <div class="modal">
+    <div class="modal-head"><h3>Request to add to calendar</h3><button class="close-x" data-close-modal><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button></div>
+    <div class="modal-body">
+      <div class="field"><label for="req-ev-title">Event title</label><input id="req-ev-title" required /></div>
+      <div class="field-row">
+        <div class="field"><label for="req-ev-date">Date</label><input id="req-ev-date" type="date" required /></div>
+        <div class="field"><label>Time</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="number" id="req-ev-time-hour" min="1" max="12" placeholder="HH" style="flex:1;" />
+            <span class="sub">:</span>
+            <input type="number" id="req-ev-time-minute" min="0" max="59" placeholder="MM" style="flex:1;" />
+            <select id="req-ev-time-ampm" style="flex:1;">
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="field"><label for="req-ev-location">Location</label><input id="req-ev-location" required placeholder="e.g. Zoom / venue name" /></div>
+      <div class="field"><label for="req-ev-desc">Description (optional)</label><textarea id="req-ev-desc" style="min-height:60px;" placeholder="Add any details Arts Access Miami should know…"></textarea></div>
+      <div class="field"><label for="req-ev-link">Link (optional)</label><input id="req-ev-link" type="url" placeholder="https://…" /></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close-modal>Cancel</button>
+      <button class="btn btn-primary" id="request-event-save-btn">Submit request</button>
     </div>
   </div>
 </div>
@@ -1601,7 +1617,7 @@
   </div>
 </div>
 
-<div class="overlay" id="modal-edit-org-profile">
+<div class="overlay" id="modal-edit-org-profile" style="z-index:101;">
   <div class="modal" style="max-width:640px;">
     <div class="modal-head"><h3>Edit profile — <span id="eop-org-name"></span></h3><button class="close-x" data-close-modal><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button></div>
     <div class="modal-body">
@@ -1631,15 +1647,6 @@
   </div>
 </div>
 
-<div class="overlay" id="modal-org-contacts-modal">
-  <div class="modal">
-    <div class="modal-head"><h3 id="org-contacts-modal-title">Staff Contacts</h3><button class="close-x" data-close-modal><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button></div>
-    <div class="modal-body" id="org-contacts-modal-body"></div>
-    <div class="modal-foot">
-      <button class="btn btn-secondary" data-close-modal>Close</button>
-    </div>
-  </div>
-</div>
 
 <div class="overlay" id="modal-grantee-profile">
   <div class="modal" style="max-width:680px;">
@@ -1815,13 +1822,21 @@
   var SESSION_KEY = "gap_grantee_portal_session_v1";
 
   var GRANTEE_ORGS = [
-    "Little Haiti Cultural Arts Center",
-    "Overtown Music Collective",
-    "Wynwood Youth Film Lab",
-    "Miami Youth Ballet",
-    "Coconut Grove Poets Circle",
-    "Allapattah Mural Project"
+    "Vocal Youth Miami",
+    "Miami Music Project",
+    "Achieve Miami",
+    "Arts for Learning",
+    "Young Musicians Unite"
   ];
+
+  var ORG_RENAME_MAP = {
+    "Little Haiti Cultural Arts Center": "Vocal Youth Miami",
+    "Overtown Music Collective": "Miami Music Project",
+    "Wynwood Youth Film Lab": "Achieve Miami",
+    "Miami Youth Ballet": "Arts for Learning",
+    "Coconut Grove Poets Circle": "Young Musicians Unite"
+  };
+  var ORG_RENAME_DROPPED = ["Allapattah Mural Project"];
 
   var SEASONS = ["Fall", "Spring"];
 
@@ -1832,21 +1847,19 @@
   var REGIONS = ["North Dade", "Central Dade", "South Dade", "West Dade"];
 
   var ORG_REGIONS = {
-    "Little Haiti Cultural Arts Center": ["North Dade", "Central Dade"],
-    "Overtown Music Collective": ["Central Dade"],
-    "Wynwood Youth Film Lab": ["Central Dade"],
-    "Miami Youth Ballet": ["Central Dade", "South Dade"],
-    "Coconut Grove Poets Circle": ["South Dade"],
-    "Allapattah Mural Project": ["West Dade", "Central Dade", "North Dade"]
+    "Vocal Youth Miami": ["North Dade", "Central Dade"],
+    "Miami Music Project": ["Central Dade"],
+    "Achieve Miami": ["Central Dade"],
+    "Arts for Learning": ["Central Dade", "South Dade"],
+    "Young Musicians Unite": ["South Dade"]
   };
 
   var ORG_TIERS = {
-    "Little Haiti Cultural Arts Center": "Alliance",
-    "Overtown Music Collective": "Catalyst",
-    "Wynwood Youth Film Lab": "Catalyst",
-    "Miami Youth Ballet": "Alliance",
-    "Coconut Grove Poets Circle": "Catalyst",
-    "Allapattah Mural Project": "Alliance"
+    "Vocal Youth Miami": "Alliance",
+    "Miami Music Project": "Catalyst",
+    "Achieve Miami": "Catalyst",
+    "Arts for Learning": "Alliance",
+    "Young Musicians Unite": "Catalyst"
   };
 
   function tierBadge(org) {
@@ -1858,65 +1871,55 @@
   var DISCIPLINES = ["dance", "theater", "marching band", "music therapy", "fine arts", "orchestra", "jazz band", "music production", "choir", "rock/alternative band", "symphonic band", "chamber strings", "chamber winds", "wind ensemble", "brass ensemble", "chamber brass", "painting/drawing", "film", "creative writing", "animation", "other visual art", "music theory", "introductory general music", "songwriting", "poetry", "fashion", "latin music"];
 
   var ORG_PROFILES = {
-    "Little Haiti Cultural Arts Center": {
+    "Vocal Youth Miami": {
       contactName: "Fabiola Registre", contactRole: "Executive Director",
-      contactEmail: "fabiola@littlehaitiarts.org", contactPhone: "(305) 555-0110",
-      website: "https://littlehaitiarts.org",
-      social: [{ label: "Instagram", url: "https://instagram.com/littlehaitiarts" }, { label: "Facebook", url: "https://facebook.com/littlehaitiarts" }],
-      programs: ["Youth Dance Ensemble", "Haitian Visual Arts Workshop", "Community Drumming Circle"],
-      disciplines: ["dance", "fine arts", "latin music"],
+      contactEmail: "fabiola@vocalyouthmiami.org", contactPhone: "(305) 555-0110",
+      website: "https://vocalyouthmiami.org",
+      social: [{ label: "Instagram", url: "https://instagram.com/vocalyouthmiami" }, { label: "Facebook", url: "https://facebook.com/vocalyouthmiami" }],
+      programs: ["Citywide Youth Choir", "Vocal Technique Workshop", "A Cappella Ensemble"],
+      disciplines: ["choir", "music theory", "introductory general music"],
       ages: "6–17",
       schools: ["Toussaint L'Ouverture Elementary", "Miami Edison Senior High", "North Miami Middle School"]
     },
-    "Overtown Music Collective": {
+    "Miami Music Project": {
       contactName: "Marcus Reed", contactRole: "Program Manager",
-      contactEmail: "marcus@overtownmusic.org", contactPhone: "(305) 555-0122",
-      website: "https://overtownmusic.org",
-      social: [{ label: "Instagram", url: "https://instagram.com/overtownmusic" }],
-      programs: ["After-School Jazz Ensemble", "Songwriting Lab", "Community Open Mic"],
-      disciplines: ["jazz band", "songwriting", "music production"],
+      contactEmail: "marcus@miamimusicproject.org", contactPhone: "(305) 555-0122",
+      website: "https://miamimusicproject.org",
+      social: [{ label: "Instagram", url: "https://instagram.com/miamimusicproject" }],
+      programs: ["After-School Orchestra", "String Ensemble Intensive", "Instrument Lending Library"],
+      disciplines: ["orchestra", "chamber strings", "music theory"],
       ages: "10–18",
       schools: ["Frederick Douglass Elementary", "Booker T. Washington Senior High"]
     },
-    "Wynwood Youth Film Lab": {
+    "Achieve Miami": {
       contactName: "Elena Suarez", contactRole: "Studio Director",
-      contactEmail: "elena@wynwoodfilmlab.org", contactPhone: "(305) 555-0134",
-      website: "https://wynwoodfilmlab.org",
-      social: [{ label: "Instagram", url: "https://instagram.com/wynwoodfilmlab" }, { label: "TikTok", url: "https://tiktok.com/@wynwoodfilmlab" }],
+      contactEmail: "elena@achievemiami.org", contactPhone: "(305) 555-0134",
+      website: "https://achievemiami.org",
+      social: [{ label: "Instagram", url: "https://instagram.com/achievemiami" }, { label: "TikTok", url: "https://tiktok.com/@achievemiami" }],
       programs: ["Fall Film Showcase Cohort", "Documentary Intensive", "Animation Studio"],
       disciplines: ["film", "animation", "creative writing"],
       ages: "13–19",
       schools: ["Design and Architecture Senior High", "Wynwood Arts Academy"]
     },
-    "Miami Youth Ballet": {
+    "Arts for Learning": {
       contactName: "Camila Torres", contactRole: "Artistic Director",
-      contactEmail: "camila@miamiyouthballet.org", contactPhone: "(305) 555-0146",
-      website: "https://miamiyouthballet.org",
-      social: [{ label: "Instagram", url: "https://instagram.com/miamiyouthballet" }],
+      contactEmail: "camila@artsforlearning.org", contactPhone: "(305) 555-0146",
+      website: "https://artsforlearning.org",
+      social: [{ label: "Instagram", url: "https://instagram.com/artsforlearning" }],
       programs: ["Pre-Professional Ballet Track", "Community Dance Saturdays", "Adaptive Dance Program"],
       disciplines: ["dance"],
       ages: "5–18",
       schools: ["Coral Way K-8 Center", "Miami Senior High", "Southside Elementary"]
     },
-    "Coconut Grove Poets Circle": {
+    "Young Musicians Unite": {
       contactName: "Devon Michaels", contactRole: "Founder",
-      contactEmail: "devon@coconutgrovepoets.org", contactPhone: "(305) 555-0158",
-      website: "https://coconutgrovepoets.org",
-      social: [{ label: "Instagram", url: "https://instagram.com/cgpoetscircle" }],
-      programs: ["Poetry Under the Banyans Reading Series", "Spoken Word Workshop"],
-      disciplines: ["poetry", "creative writing"],
+      contactEmail: "devon@youngmusiciansunite.org", contactPhone: "(305) 555-0158",
+      website: "https://youngmusiciansunite.org",
+      social: [{ label: "Instagram", url: "https://instagram.com/youngmusiciansunite" }],
+      programs: ["After-School Jazz Ensemble", "Songwriting Lab", "Community Open Mic"],
+      disciplines: ["jazz band", "songwriting", "music production"],
       ages: "12–18",
       schools: ["Coconut Grove Elementary", "Ransom Everglades (community partner)"]
-    },
-    "Allapattah Mural Project": {
-      contactName: "Rosa Delgado", contactRole: "Public Art Director",
-      contactEmail: "rosa@allapattahmurals.org", contactPhone: "(305) 555-0170",
-      website: "https://allapattahmurals.org",
-      social: [{ label: "Instagram", url: "https://instagram.com/allapattahmurals" }],
-      programs: ["Community Mural Apprenticeship", "Youth Public Art Bootcamp"],
-      disciplines: ["painting/drawing", "other visual art"],
-      ages: "14–19",
-      schools: ["Allapattah Elementary", "Miami Jackson Senior High"]
     }
   };
 
@@ -1932,9 +1935,7 @@
     "Southside Elementary": "Miami Senior High Feeder Pattern",
     "Miami Senior High": "Miami Senior High Feeder Pattern",
     "Coconut Grove Elementary": "Coral Gables Senior High Feeder Pattern",
-    "Ransom Everglades (community partner)": "Coral Gables Senior High Feeder Pattern",
-    "Allapattah Elementary": "Miami Jackson Senior High Feeder Pattern",
-    "Miami Jackson Senior High": "Miami Jackson Senior High Feeder Pattern"
+    "Ransom Everglades (community partner)": "Coral Gables Senior High Feeder Pattern"
   };
 
   function feederPatternsForOrg(org) {
@@ -1991,11 +1992,11 @@
 
   function seedDB() {
     var events = [
-      { id: "e1", title: "Insurance Certificate Renewal", type: "deadline", date: todayISO(3), time: "", location: "", description: "Submit updated certificate of insurance to your program officer.", org: "Little Haiti Cultural Arts Center" },
-      { id: "e2", title: "Site Visit Confirmation", type: "deadline", date: todayISO(-7), time: "", location: "", description: "Confirm your fall site visit window with AAM staff.", org: "Overtown Music Collective" },
+      { id: "e1", title: "Insurance Certificate Renewal", type: "deadline", date: todayISO(3), time: "", location: "", description: "Submit updated certificate of insurance to your program officer.", org: "Vocal Youth Miami" },
+      { id: "e2", title: "Site Visit Confirmation", type: "deadline", date: todayISO(-7), time: "", location: "", description: "Confirm your fall site visit window with AAM staff.", org: "Miami Music Project" },
       { id: "e3", title: "Q3 Progress Report Due", type: "deadline", date: todayISO(8), time: "", location: "", description: "Submit your Q3 narrative and expense report.", org: "All grantees" },
       { id: "e4", title: "Final Budget Reconciliation", type: "deadline", date: todayISO(28), time: "", location: "", description: "Year-end budget reconciliation for active grants.", org: "All grantees" },
-      { id: "e5", title: "Quarterly Check-in Call", type: "meeting", date: todayISO(5), time: "10:00", location: "Zoom", description: "Standing check-in with your program officer.", org: "Miami Youth Ballet" },
+      { id: "e5", title: "Quarterly Check-in Call", type: "meeting", date: todayISO(5), time: "10:00", location: "Zoom", description: "Standing check-in with your program officer.", org: "Arts for Learning" },
       { id: "e11", title: "Grantee Orientation Call", type: "meeting", date: todayISO(-60), time: "10:00", location: "Zoom", description: "Kickoff orientation covering reporting requirements and key dates for the grant cycle.", agenda: "1. Welcome & introductions\n2. Grant cycle timeline and key dates\n3. Reporting requirements walkthrough\n4. Q&A", org: "All grantees" },
       { id: "e12", title: "Fall Site Visit Debrief", type: "meeting", date: todayISO(-6), time: "14:00", location: "Arts Access Miami HQ", description: "Debrief session following fall site visits.", agenda: "1. Recap of fall site visits\n2. Common themes and recommendations\n3. Follow-up action items by organization", org: "All grantees" },
       { id: "e13", title: "Bi-yearly Leadership Check-In", type: "meeting", date: todayISO(-14), time: "09:00", location: "Arts Access Miami HQ", description: "Semiannual check-in with grantee leadership on strategic priorities and partnership health.", agenda: "1. State of the network update\n2. Strategic priorities for the next 6 months\n3. Open floor for leadership feedback", org: "All grantees" },
@@ -2005,10 +2006,9 @@
       { id: "e17", title: "Leadership Cohort Meeting", type: "meeting", date: todayISO(18), time: "11:00", location: "Zoom", description: "Regular convening for the grantee leadership cohort.", agenda: "1. Network updates\n2. Funding opportunities\n3. Roundtable: challenges and wins", org: "", cohort: "Leadership Cohort" },
       { id: "e18", title: "Principal Cohort Meeting", type: "meeting", date: todayISO(25), time: "15:00", location: "Zoom", description: "Quarterly meeting with partner school principals and grantee leadership.", agenda: "1. School partnership updates\n2. Scheduling for next quarter\n3. Shared concerns and requests", org: "", cohort: "Principal Cohort" },
       { id: "e19", title: "Data Cohort Meeting", type: "meeting", date: todayISO(-3), time: "14:00", location: "Zoom", description: "Working session on data collection and outcome reporting across grantees.", agenda: "1. Data collection tool updates\n2. Mid-year outcome reporting prep\n3. Q&A on metrics", org: "", cohort: "Data Cohort" },
-      { id: "e6", title: "Fall Gallery Opening", type: "event", date: todayISO(7), time: "18:30", location: "Wynwood Youth Film Lab Studio", description: "Opening night for the fall youth film showcase.", org: "Wynwood Youth Film Lab", registrationLink: "https://forms.example.com/fall-gallery-rsvp", visibility: "public", flyer: placeholderPhoto("Fall Gallery Opening", 0) },
-      { id: "e7", title: "Community Mural Unveiling", type: "event", date: todayISO(13), time: "16:00", location: "NW 17th Ave & 22nd St", description: "Unveiling of the new Allapattah community mural.", org: "Allapattah Mural Project", registrationLink: "", visibility: "public", flyer: placeholderPhoto("Community Mural Unveiling", 2) },
+      { id: "e6", title: "Fall Gallery Opening", type: "event", date: todayISO(7), time: "18:30", location: "Achieve Miami Studio", description: "Opening night for the fall youth film showcase.", org: "Achieve Miami", registrationLink: "https://forms.example.com/fall-gallery-rsvp", visibility: "public", flyer: placeholderPhoto("Fall Gallery Opening", 0) },
       { id: "e8", title: "Grantee Networking Mixer", type: "event", date: todayISO(15), time: "17:30", location: "Arts Access Miami HQ", description: "Cross-grantee networking mixer hosted by AAM.", org: "All grantees", registrationLink: "https://forms.example.com/mixer-rsvp", visibility: "private", flyer: null },
-      { id: "e9", title: "Poetry Under the Banyans", type: "event", date: todayISO(21), time: "19:00", location: "Peacock Park", description: "Open-air reading series.", org: "Coconut Grove Poets Circle", registrationLink: "", visibility: "public", flyer: null },
+      { id: "e9", title: "Community Open Mic Night", type: "event", date: todayISO(21), time: "19:00", location: "Peacock Park", description: "Open-air open mic performance night.", org: "Young Musicians Unite", registrationLink: "", visibility: "public", flyer: null },
       { id: "e10", title: "Grant Renewal Application Opens", type: "deadline", date: todayISO(35), time: "", location: "", description: "2027 grant cycle application window opens.", org: "All grantees" }
     ];
 
@@ -2030,16 +2030,14 @@
     var photos = [];
 
     var posts = [
-      { id: "po1", org: "Overtown Music Collective", subject: "Rehearsals underway for the December showcase", text: "Rehearsals are in full swing for our December showcase! Grateful for the continued support from Arts Access Miami and excited to share the lineup soon.", image: null, date: todayISO(-1), likes: 6, liked: false },
-      { id: "po2", org: "Wynwood Youth Film Lab", subject: "Save the date: Fall Gallery Opening", text: "Save the date — our Fall Gallery Opening is next week. All grantees welcome to stop by and see what our students have been working on this semester.", image: placeholderPhoto("Fall Gallery Opening", 0), date: todayISO(-2), likes: 11, liked: true },
-      { id: "po3", org: "Allapattah Mural Project", subject: "Mural wall prep complete", text: "Wall prep is done and paint starts this weekend. Huge thanks to the volunteers who came out in the heat to help scaffold and prime.", image: placeholderPhoto("Community Mural Project", 2), date: todayISO(-4), likes: 9, liked: false },
-      { id: "po4", org: "Miami Youth Ballet", subject: "Looking for shared rehearsal space", text: "Looking for a shared rehearsal space for two Saturdays in November — if any grantee has room to spare, send us a message!", image: null, date: todayISO(-6), likes: 3, liked: false }
+      { id: "po1", org: "Miami Music Project", subject: "Rehearsals underway for the December showcase", text: "Rehearsals are in full swing for our December showcase! Grateful for the continued support from Arts Access Miami and excited to share the lineup soon.", image: null, date: todayISO(-1), likes: 6, liked: false },
+      { id: "po2", org: "Achieve Miami", subject: "Save the date: Fall Gallery Opening", text: "Save the date — our Fall Gallery Opening is next week. All grantees welcome to stop by and see what our students have been working on this semester.", image: placeholderPhoto("Fall Gallery Opening", 0), date: todayISO(-2), likes: 11, liked: true },
+      { id: "po4", org: "Arts for Learning", subject: "Looking for shared rehearsal space", text: "Looking for a shared rehearsal space for two Saturdays in November — if any grantee has room to spare, send us a message!", image: null, date: todayISO(-6), likes: 3, liked: false }
     ];
 
     var comments = [
-      { id: "cmt1", postId: "po2", author: "Little Haiti Cultural Arts Center", authorRole: "grantee", text: "This looks amazing, can't wait to stop by!", ts: minutesAgoTs(90) },
-      { id: "cmt2", postId: "po2", author: "Arts Access Miami", authorRole: "admin", text: "So proud of this cohort — great work!", ts: minutesAgoTs(60) },
-      { id: "cmt3", postId: "po3", author: "Overtown Music Collective", authorRole: "grantee", text: "The mural is stunning, congrats to the team!", ts: minutesAgoTs(200) }
+      { id: "cmt1", postId: "po2", author: "Vocal Youth Miami", authorRole: "grantee", text: "This looks amazing, can't wait to stop by!", ts: minutesAgoTs(90) },
+      { id: "cmt2", postId: "po2", author: "Arts Access Miami", authorRole: "admin", text: "So proud of this cohort — great work!", ts: minutesAgoTs(60) }
     ];
 
     var documents = [
@@ -2060,44 +2058,40 @@
     ];
 
     var reports = [
-      { id: "r1", org: "Little Haiti Cultural Arts Center", stage: "pre", narrative: "We've finalized our teaching artist roster and confirmed our fall session calendar with Little Haiti Cultural Complex. Attached is our pre-report budget template and scorecard.", itemFiles: {
+      { id: "r1", org: "Vocal Youth Miami", stage: "pre", narrative: "We've finalized our teaching artist roster and confirmed our fall session calendar with our partner schools. Attached is our pre-report budget template and scorecard.", itemFiles: {
         "Pre-Report Budget Template": { id: "rf1", name: "Pre-Report-Budget-Template.xlsx", size: "48 KB", src: placeholderPhoto("Pre-Report Budget Template", 4) },
         "Scorecard": { id: "rf2", name: "Scorecard.pdf", size: "96 KB", src: placeholderPhoto("Scorecard", 1) }
       }, submittedAt: todayISO(-6), itemReviews: { "Pre-Report Budget Template": "approved", "Scorecard": "approved" }, reviewNote: "", reviewedAt: todayISO(-4), reviewedBy: "Dana Whitfield" },
-      { id: "r2", org: "Overtown Music Collective", stage: "pre", narrative: "Rehearsal space is secured through December and our instructor contracts are signed. We've attached our scorecard.", itemFiles: {
+      { id: "r2", org: "Miami Music Project", stage: "pre", narrative: "Rehearsal space is secured through December and our instructor contracts are signed. We've attached our scorecard.", itemFiles: {
         "Scorecard": { id: "rf3", name: "Scorecard.pdf", size: "88 KB", src: placeholderPhoto("Scorecard", 5) }
       }, submittedAt: todayISO(-3), itemReviews: {}, reviewNote: "" },
-      { id: "r3", org: "Wynwood Youth Film Lab", stage: "pre", narrative: "Equipment inventory is complete and our fall cohort of 18 students is confirmed. Attached is our budget template and questionnaire.", itemFiles: {
+      { id: "r3", org: "Achieve Miami", stage: "pre", narrative: "Equipment inventory is complete and our fall cohort of 18 students is confirmed. Attached is our budget template and questionnaire.", itemFiles: {
         "Pre-Report Budget Template": { id: "rf4", name: "Pre-Report-Budget-Template.xlsx", size: "52 KB", src: placeholderPhoto("Pre-Report Budget Template", 2) },
         "Questionnaire": { id: "rf5", name: "Questionnaire.pdf", size: "64 KB", src: placeholderPhoto("Questionnaire", 0) }
       }, submittedAt: todayISO(-8), itemReviews: { "Pre-Report Budget Template": "approved", "Questionnaire": "rejected" }, reviewNote: "The questionnaire is missing responses for section 2 — please resubmit.", reviewedAt: todayISO(-7), reviewedBy: "Dana Whitfield" }
     ];
 
     var photoshootAlbums = [
-      { id: "psa1", org: "Little Haiti Cultural Arts Center", season: "Fall", region: "North Dade", link: "" },
-      { id: "psa2", org: "Little Haiti Cultural Arts Center", season: "Fall", region: "Central Dade", link: "" },
-      { id: "psa3", org: "Little Haiti Cultural Arts Center", season: "Spring", region: "North Dade", link: "" },
-      { id: "psa4", org: "Overtown Music Collective", season: "Fall", region: "Central Dade", link: "" },
-      { id: "psa5", org: "Allapattah Mural Project", season: "Fall", region: "West Dade", link: "" },
-      { id: "psa6", org: "Allapattah Mural Project", season: "Fall", region: "Central Dade", link: "" }
+      { id: "psa1", org: "Vocal Youth Miami", season: "Fall", region: "North Dade", link: "" },
+      { id: "psa2", org: "Vocal Youth Miami", season: "Fall", region: "Central Dade", link: "" },
+      { id: "psa3", org: "Vocal Youth Miami", season: "Spring", region: "North Dade", link: "" },
+      { id: "psa4", org: "Miami Music Project", season: "Fall", region: "Central Dade", link: "" }
     ];
 
     var DEMO_COHORTS = {
-      "Little Haiti Cultural Arts Center": ["Marketing Cohort", "Leadership Cohort"],
-      "Overtown Music Collective": ["Data Cohort"],
-      "Wynwood Youth Film Lab": ["Principal Cohort", "Teaching Artist Cohort"],
-      "Miami Youth Ballet": ["Program Director Cohort"],
-      "Coconut Grove Poets Circle": [],
-      "Allapattah Mural Project": ["Youth Advocacy Council"]
+      "Vocal Youth Miami": ["Marketing Cohort", "Leadership Cohort"],
+      "Miami Music Project": ["Data Cohort"],
+      "Achieve Miami": ["Principal Cohort", "Teaching Artist Cohort"],
+      "Arts for Learning": ["Program Director Cohort"],
+      "Young Musicians Unite": []
     };
 
     var DEMO_PERSON_REGIONS = {
-      "Little Haiti Cultural Arts Center": ["North"],
-      "Overtown Music Collective": ["Central"],
-      "Wynwood Youth Film Lab": ["Central"],
-      "Miami Youth Ballet": ["Central", "South"],
-      "Coconut Grove Poets Circle": ["South"],
-      "Allapattah Mural Project": []
+      "Vocal Youth Miami": ["North"],
+      "Miami Music Project": ["Central"],
+      "Achieve Miami": ["Central"],
+      "Arts for Learning": ["Central", "South"],
+      "Young Musicians Unite": ["South"]
     };
 
     var accounts = [
@@ -2113,80 +2107,79 @@
     ];
 
     var financeDocuments = [
-      { id: "fd1", org: "Little Haiti Cultural Arts Center", name: "Little-Haiti-W9-2026.pdf", category: "W-9", size: "96 KB", uploadedBy: "Little Haiti Cultural Arts Center", uploadedAt: todayISO(-30), src: placeholderPhoto("W-9 Form", 3) },
-      { id: "fd2", org: "Little Haiti Cultural Arts Center", name: "Certificate-of-Insurance.pdf", category: "Certificate of Insurance", size: "140 KB", uploadedBy: "Little Haiti Cultural Arts Center", uploadedAt: todayISO(-25), src: placeholderPhoto("Certificate of Insurance", 1) },
-      { id: "fd3", org: "Overtown Music Collective", name: "Overtown-W9-2026.pdf", category: "W-9", size: "88 KB", uploadedBy: "Overtown Music Collective", uploadedAt: todayISO(-18), src: placeholderPhoto("W-9 Form", 4) }
+      { id: "fd1", org: "Vocal Youth Miami", name: "VocalYouthMiami-W9-2026.pdf", category: "W-9", size: "96 KB", uploadedBy: "Vocal Youth Miami", uploadedAt: todayISO(-30), src: placeholderPhoto("W-9 Form", 3) },
+      { id: "fd2", org: "Vocal Youth Miami", name: "Certificate-of-Insurance.pdf", category: "Certificate of Insurance", size: "140 KB", uploadedBy: "Vocal Youth Miami", uploadedAt: todayISO(-25), src: placeholderPhoto("Certificate of Insurance", 1) },
+      { id: "fd3", org: "Miami Music Project", name: "MiamiMusicProject-W9-2026.pdf", category: "W-9", size: "88 KB", uploadedBy: "Miami Music Project", uploadedAt: todayISO(-18), src: placeholderPhoto("W-9 Form", 4) }
     ];
 
     var orgContacts = GRANTEE_ORGS.map(function (org, i) {
       var p = ORG_PROFILES[org];
       return { id: "oc" + (i + 1), org: org, name: p.contactName, role: p.contactRole, email: p.contactEmail, phone: p.contactPhone, visible: true };
     }).concat([
-      { id: "oc7", org: "Little Haiti Cultural Arts Center", name: "Jean Baptiste", role: "Finance Manager", email: "jean@littlehaitiarts.org", phone: "(305) 555-0199", visible: true },
-      { id: "oc8", org: "Little Haiti Cultural Arts Center", name: "Nadege Pierre", role: "Teaching Artist Coordinator", email: "nadege@littlehaitiarts.org", phone: "(305) 555-0183", visible: true },
-      { id: "oc9", org: "Overtown Music Collective", name: "Alicia Brown", role: "Marketing & Communications", email: "alicia@overtownmusic.org", phone: "(305) 555-0144", visible: true },
-      { id: "oc10", org: "Wynwood Youth Film Lab", name: "Carlos Mendez", role: "Teaching Artist", email: "carlos@wynwoodfilmlab.org", phone: "(305) 555-0157", visible: true },
-      { id: "oc11", org: "Wynwood Youth Film Lab", name: "Priya Shah", role: "Operations Manager", email: "priya@wynwoodfilmlab.org", phone: "(305) 555-0169", visible: true },
-      { id: "oc12", org: "Miami Youth Ballet", name: "Gabriel Ortiz", role: "Program Director", email: "gabriel@miamiyouthballet.org", phone: "(305) 555-0191", visible: true }
+      { id: "oc7", org: "Vocal Youth Miami", name: "Jean Baptiste", role: "Finance Manager", email: "jean@vocalyouthmiami.org", phone: "(305) 555-0199", visible: true },
+      { id: "oc8", org: "Vocal Youth Miami", name: "Nadege Pierre", role: "Teaching Artist Coordinator", email: "nadege@vocalyouthmiami.org", phone: "(305) 555-0183", visible: true },
+      { id: "oc9", org: "Miami Music Project", name: "Alicia Brown", role: "Marketing & Communications", email: "alicia@miamimusicproject.org", phone: "(305) 555-0144", visible: true },
+      { id: "oc10", org: "Achieve Miami", name: "Carlos Mendez", role: "Teaching Artist", email: "carlos@achievemiami.org", phone: "(305) 555-0157", visible: true },
+      { id: "oc11", org: "Achieve Miami", name: "Priya Shah", role: "Operations Manager", email: "priya@achievemiami.org", phone: "(305) 555-0169", visible: true },
+      { id: "oc12", org: "Arts for Learning", name: "Gabriel Ortiz", role: "Program Director", email: "gabriel@artsforlearning.org", phone: "(305) 555-0191", visible: true }
     ]);
 
     var grantAmounts = {
-      "Little Haiti Cultural Arts Center": 65000,
-      "Overtown Music Collective": 28000,
-      "Wynwood Youth Film Lab": 32000,
-      "Miami Youth Ballet": 58000,
-      "Coconut Grove Poets Circle": 18000,
-      "Allapattah Mural Project": 50000
+      "Vocal Youth Miami": 65000,
+      "Miami Music Project": 28000,
+      "Achieve Miami": 32000,
+      "Arts for Learning": 58000,
+      "Young Musicians Unite": 18000
     };
 
     var disbursements = [
-      { id: "ds1", org: "Little Haiti Cultural Arts Center", label: "Initial Disbursement (40%)", amount: 26000, scheduledDate: todayISO(-45), status: "confirmed", sentAt: todayISO(-40), confirmedAt: todayISO(-38) },
-      { id: "ds2", org: "Little Haiti Cultural Arts Center", label: "Mid-Year Disbursement (30%)", amount: 19500, scheduledDate: todayISO(-2), status: "sent", sentAt: todayISO(-2), confirmedAt: null },
-      { id: "ds3", org: "Little Haiti Cultural Arts Center", label: "Final Disbursement (30%)", amount: 19500, scheduledDate: todayISO(90), status: "scheduled", sentAt: null, confirmedAt: null },
-      { id: "ds4", org: "Overtown Music Collective", label: "Initial Disbursement (40%)", amount: 11200, scheduledDate: todayISO(-50), status: "confirmed", sentAt: todayISO(-48), confirmedAt: todayISO(-47) },
-      { id: "ds5", org: "Overtown Music Collective", label: "Mid-Year Disbursement (30%)", amount: 8400, scheduledDate: todayISO(30), status: "scheduled", sentAt: null, confirmedAt: null }
+      { id: "ds1", org: "Vocal Youth Miami", label: "Initial Disbursement (40%)", amount: 26000, scheduledDate: todayISO(-45), status: "confirmed", sentAt: todayISO(-40), confirmedAt: todayISO(-38) },
+      { id: "ds2", org: "Vocal Youth Miami", label: "Mid-Year Disbursement (30%)", amount: 19500, scheduledDate: todayISO(-2), status: "sent", sentAt: todayISO(-2), confirmedAt: null },
+      { id: "ds3", org: "Vocal Youth Miami", label: "Final Disbursement (30%)", amount: 19500, scheduledDate: todayISO(90), status: "scheduled", sentAt: null, confirmedAt: null },
+      { id: "ds4", org: "Miami Music Project", label: "Initial Disbursement (40%)", amount: 11200, scheduledDate: todayISO(-50), status: "confirmed", sentAt: todayISO(-48), confirmedAt: todayISO(-47) },
+      { id: "ds5", org: "Miami Music Project", label: "Mid-Year Disbursement (30%)", amount: 8400, scheduledDate: todayISO(30), status: "scheduled", sentAt: null, confirmedAt: null }
     ];
 
     var meetingAttendance = [
-      { id: "ma1", eventId: "e11", org: "Little Haiti Cultural Arts Center", status: "attended", note: "" },
-      { id: "ma2", eventId: "e11", org: "Overtown Music Collective", status: "attended", note: "" },
-      { id: "ma3", eventId: "e11", org: "Wynwood Youth Film Lab", status: "attended", note: "" },
-      { id: "ma4", eventId: "e11", org: "Miami Youth Ballet", status: "excused", note: "Conflicted with a performance rehearsal" },
-      { id: "ma5", eventId: "e11", org: "Coconut Grove Poets Circle", status: "attended", note: "" },
-      { id: "ma6", eventId: "e11", org: "Allapattah Mural Project", status: "absent", note: "" },
-      { id: "ma7", eventId: "e12", org: "Little Haiti Cultural Arts Center", status: "attended", note: "" },
-      { id: "ma8", eventId: "e12", org: "Overtown Music Collective", status: "absent", note: "" },
+      { id: "ma1", eventId: "e11", org: "Vocal Youth Miami", status: "attended", note: "" },
+      { id: "ma2", eventId: "e11", org: "Miami Music Project", status: "attended", note: "" },
+      { id: "ma3", eventId: "e11", org: "Achieve Miami", status: "attended", note: "" },
+      { id: "ma4", eventId: "e11", org: "Arts for Learning", status: "excused", note: "Conflicted with a performance rehearsal" },
+      { id: "ma5", eventId: "e11", org: "Young Musicians Unite", status: "attended", note: "" },
+      { id: "ma7", eventId: "e12", org: "Vocal Youth Miami", status: "attended", note: "" },
+      { id: "ma8", eventId: "e12", org: "Miami Music Project", status: "absent", note: "" },
 
-      { id: "ma9", eventId: "e13", org: "Little Haiti Cultural Arts Center", status: "attended", note: "" },
-      { id: "ma10", eventId: "e13", org: "Overtown Music Collective", status: "attended", note: "" },
-      { id: "ma11", eventId: "e13", org: "Wynwood Youth Film Lab", status: "attended", note: "" },
-      { id: "ma12", eventId: "e13", org: "Miami Youth Ballet", status: "attended", note: "" },
-      { id: "ma13", eventId: "e13", org: "Coconut Grove Poets Circle", status: "absent", note: "" },
-      { id: "ma14", eventId: "e13", org: "Allapattah Mural Project", status: "attended", note: "" },
+      { id: "ma9", eventId: "e13", org: "Vocal Youth Miami", status: "attended", note: "" },
+      { id: "ma10", eventId: "e13", org: "Miami Music Project", status: "attended", note: "" },
+      { id: "ma11", eventId: "e13", org: "Achieve Miami", status: "attended", note: "" },
+      { id: "ma12", eventId: "e13", org: "Arts for Learning", status: "attended", note: "" },
+      { id: "ma13", eventId: "e13", org: "Young Musicians Unite", status: "absent", note: "" },
 
-      { id: "ma15", eventId: "e14", org: "Little Haiti Cultural Arts Center", status: "attended", note: "" },
-      { id: "ma16", eventId: "e14", org: "Wynwood Youth Film Lab", status: "attended", note: "" },
-      { id: "ma17", eventId: "e14", org: "Allapattah Mural Project", status: "excused", note: "Marketing lead was traveling" },
+      { id: "ma15", eventId: "e14", org: "Vocal Youth Miami", status: "attended", note: "" },
+      { id: "ma16", eventId: "e14", org: "Achieve Miami", status: "attended", note: "" },
 
-      { id: "ma18", eventId: "e15", org: "Little Haiti Cultural Arts Center", status: "attended", note: "" },
-      { id: "ma19", eventId: "e15", org: "Overtown Music Collective", status: "attended", note: "" },
-      { id: "ma20", eventId: "e15", org: "Wynwood Youth Film Lab", status: "absent", note: "" },
-      { id: "ma21", eventId: "e15", org: "Miami Youth Ballet", status: "attended", note: "" },
-      { id: "ma22", eventId: "e15", org: "Coconut Grove Poets Circle", status: "attended", note: "" },
-      { id: "ma23", eventId: "e15", org: "Allapattah Mural Project", status: "attended", note: "" },
+      { id: "ma18", eventId: "e15", org: "Vocal Youth Miami", status: "attended", note: "" },
+      { id: "ma19", eventId: "e15", org: "Miami Music Project", status: "attended", note: "" },
+      { id: "ma20", eventId: "e15", org: "Achieve Miami", status: "absent", note: "" },
+      { id: "ma21", eventId: "e15", org: "Arts for Learning", status: "attended", note: "" },
+      { id: "ma22", eventId: "e15", org: "Young Musicians Unite", status: "attended", note: "" },
 
-      { id: "ma24", eventId: "e19", org: "Overtown Music Collective", status: "attended", note: "" },
-      { id: "ma25", eventId: "e19", org: "Miami Youth Ballet", status: "attended", note: "" },
-      { id: "ma26", eventId: "e19", org: "Coconut Grove Poets Circle", status: "absent", note: "" }
+      { id: "ma24", eventId: "e19", org: "Miami Music Project", status: "attended", note: "" },
+      { id: "ma25", eventId: "e19", org: "Arts for Learning", status: "attended", note: "" },
+      { id: "ma26", eventId: "e19", org: "Young Musicians Unite", status: "absent", note: "" }
     ];
 
 
     var inviteRequests = [
-      { id: "ir1", org: "Little Haiti Cultural Arts Center", role: "grantee", requestedByEmail: "programs@littlehaiticulturalarts.org", requestedByName: "Marie Delva", inviteeName: "Jean Baptiste", inviteeEmail: "jean.baptiste@littlehaiticulturalarts.org", note: "New teaching artist coordinator", status: "pending", submittedAt: todayISO(-2) }
+      { id: "ir1", org: "Vocal Youth Miami", role: "grantee", requestedByEmail: "programs@vocalyouthmiami.org", requestedByName: "Marie Delva", inviteeName: "Jean Baptiste", inviteeEmail: "jean.baptiste@vocalyouthmiami.org", note: "New teaching artist coordinator", status: "pending", submittedAt: todayISO(-2) }
     ];
 
     var marketingMaterials = [
-      { id: "mm1", org: "Little Haiti Cultural Arts Center", name: "fall-program-flyer.jpg", size: "640 KB", src: placeholderPhoto("Fall Program Flyer", 2), type: "image/jpeg", uploadedBy: "Marie Delva", uploadedAt: todayISO(-12) }
+      { id: "mm1", org: "Vocal Youth Miami", name: "fall-program-flyer.jpg", size: "640 KB", src: placeholderPhoto("Fall Program Flyer", 2), type: "image/jpeg", uploadedBy: "Marie Delva", uploadedAt: todayISO(-12) }
+    ];
+
+    var calendarEventRequests = [
+      { id: "cer1", org: "Miami Music Project", title: "Winter Recital Showcase", date: todayISO(24), time: "18:00", location: "Miami Music Project Rehearsal Hall", description: "Student recital closing out the winter session.", link: "", requestedByName: "Marcus Reed", requestedByEmail: "marcus@miamimusicproject.org", submittedAt: todayISO(-1), status: "pending" }
     ];
 
     var meetingMaterials = [
@@ -2194,7 +2187,7 @@
       { id: "mt2", eventId: "e13", name: "group-photo.jpg", size: "720 KB", src: placeholderPhoto("Leadership Check-In Group Photo", 3), type: "image/jpeg", uploadedBy: "Dana Whitfield", uploadedByEmail: "dana.whitfield@artsaccessmiami.org", uploadedAt: todayISO(-13) }
     ];
 
-    return { events: events, photos: photos, posts: posts, comments: comments, documents: documents, contacts: contacts, reports: reports, albums: albums, photoshootAlbums: photoshootAlbums, accounts: accounts, invites: invites, financeDocuments: financeDocuments, orgContacts: orgContacts, grantAmounts: grantAmounts, disbursements: disbursements, meetingAttendance: meetingAttendance, inviteRequests: inviteRequests, marketingMaterials: marketingMaterials, meetingMaterials: meetingMaterials, orgProfiles: ORG_PROFILES, notifications: [], removedOrgs: [] };
+    return { events: events, photos: photos, posts: posts, comments: comments, documents: documents, contacts: contacts, reports: reports, albums: albums, photoshootAlbums: photoshootAlbums, accounts: accounts, invites: invites, financeDocuments: financeDocuments, orgContacts: orgContacts, grantAmounts: grantAmounts, disbursements: disbursements, meetingAttendance: meetingAttendance, inviteRequests: inviteRequests, marketingMaterials: marketingMaterials, meetingMaterials: meetingMaterials, orgProfiles: ORG_PROFILES, notifications: [], removedOrgs: [], calendarEventRequests: calendarEventRequests, reportExtras: [] };
   }
 
   function loadDB() {
@@ -2253,8 +2246,14 @@
     if (changed) saveDB(db);
   })();
   (function migratePrototypeAlbums() {
+    var oldPrototypeTitles = ["Fall Gallery Opening", "Poetry Under the Banyans", "Community Mural Unveiling", "Grantee Networking Mixer"];
     var newEventTitles = ["North Dade Principal Cohort", "South Dade Principal Cohort", "Central Principal Cohort", "Miami Gardens Youth Music Festival", "South Dade Youth Music Festival", "Downtown Youth Music Festival", "Program Director Cohort", "Teaching Artist Cohort", "Leadership Cohort", "Interlochen", "Marketing Cohort", "Data Cohort"];
     var changed = false;
+    if (db.albums.some(function (a) { return oldPrototypeTitles.indexOf(a.title) !== -1; })) {
+      db.albums = db.albums.filter(function (a) { return oldPrototypeTitles.indexOf(a.title) === -1; });
+      db.photos = db.photos.filter(function (p) { return oldPrototypeTitles.indexOf(p.eventTag) === -1; });
+      changed = true;
+    }
     newEventTitles.forEach(function (title, i) {
       if (!db.albums.some(function (a) { return a.title === title; })) {
         db.albums.push({ id: "al-new" + (i + 1), title: title, description: "", date: "", link: "", createdAt: todayISO(0) });
@@ -2314,14 +2313,20 @@
   if (!db.financeDocuments) { db.financeDocuments = seedDB().financeDocuments; saveDB(db); }
   if (!db.orgContacts) { db.orgContacts = seedDB().orgContacts; saveDB(db); }
   (function migrateExtraOrgContacts() {
-    if (db.extraOrgContactsSeeded) return;
-    var extraIds = ["oc8", "oc9", "oc10", "oc11", "oc12"];
-    // Earlier versions added these contacts together, so any one is evidence of prior seeding.
-    if (!db.orgContacts.some(function (c) { return extraIds.indexOf(c.id) !== -1; })) {
-      db.orgContacts = db.orgContacts.concat(seedDB().orgContacts.filter(function (c) { return extraIds.indexOf(c.id) !== -1; }));
+    var extraIds = ["oc7", "oc8", "oc9", "oc10", "oc11", "oc12"];
+    var missingIds = extraIds.filter(function (id) { return !db.orgContacts.some(function (c) { return c.id === id; }); });
+    var changed = false;
+    if (missingIds.length) {
+      db.orgContacts = db.orgContacts.concat(seedDB().orgContacts.filter(function (c) { return missingIds.indexOf(c.id) !== -1; }));
+      changed = true;
     }
-    db.extraOrgContactsSeeded = true;
-    saveDB(db);
+    if (!db.oc7VisibilityFixed) {
+      var oldHiddenJean = db.orgContacts.filter(function (c) { return c.id === "oc7" && !c.visible; })[0];
+      if (oldHiddenJean) oldHiddenJean.visible = true;
+      db.oc7VisibilityFixed = true;
+      changed = true;
+    }
+    if (changed) saveDB(db);
   })();
   if (!db.comments) { db.comments = seedDB().comments; saveDB(db); }
   (function migratePostSubject() {
@@ -2341,6 +2346,21 @@
   if (!db.orgProfiles) { db.orgProfiles = seedDB().orgProfiles; saveDB(db); }
   if (!db.notifications) { db.notifications = []; saveDB(db); }
   if (!db.removedOrgs) { db.removedOrgs = []; saveDB(db); }
+  if (!db.calendarEventRequests) { db.calendarEventRequests = seedDB().calendarEventRequests; saveDB(db); }
+  if (!db.reportExtras) { db.reportExtras = []; saveDB(db); }
+  (function migrateCalendarEventRequestStatus() {
+    var changed = false;
+    db.calendarEventRequests.forEach(function (r) { if (r.status === undefined) { r.status = "pending"; changed = true; } });
+    if (changed) saveDB(db);
+  })();
+  (function migrateAccountTitlePhone() {
+    var changed = false;
+    db.accounts.forEach(function (a) {
+      if (a.title === undefined) { a.title = ""; changed = true; }
+      if (a.phone === undefined) { a.phone = ""; changed = true; }
+    });
+    if (changed) saveDB(db);
+  })();
   (function migrateNewPartnersPacket() {
     var packet = db.documents.filter(function (d) { return d.name === "Arts Access Miami - New Partners Information Packet.pdf"; })[0];
     if (!packet) {
@@ -2372,13 +2392,73 @@
     });
     if (changed) saveDB(db);
   })();
+  (function migrateOrgRename() {
+    if (db.orgRenameMigrated) return;
+    function renameOrgField(list, field) {
+      list.forEach(function (item) {
+        if (item[field] && ORG_RENAME_MAP[item[field]]) item[field] = ORG_RENAME_MAP[item[field]];
+      });
+    }
+    renameOrgField(db.events, "org");
+    renameOrgField(db.posts, "org");
+    renameOrgField(db.comments, "author");
+    renameOrgField(db.reports, "org");
+    renameOrgField(db.photoshootAlbums, "org");
+    renameOrgField(db.accounts, "org");
+    renameOrgField(db.financeDocuments, "org");
+    renameOrgField(db.financeDocuments, "uploadedBy");
+    renameOrgField(db.orgContacts, "org");
+    renameOrgField(db.disbursements, "org");
+    renameOrgField(db.meetingAttendance, "org");
+    renameOrgField(db.inviteRequests, "org");
+    renameOrgField(db.marketingMaterials, "org");
+    renameOrgField(db.calendarEventRequests, "org");
+    renameOrgField(db.reportExtras, "org");
+    renameOrgField(db.invites, "org");
+    renameOrgField(db.notifications, "org");
+
+    [db.orgProfiles, db.grantAmounts].forEach(function (map) {
+      for (var oldName in ORG_RENAME_MAP) {
+        if (map.hasOwnProperty(oldName)) {
+          map[ORG_RENAME_MAP[oldName]] = map[oldName];
+          delete map[oldName];
+        }
+      }
+    });
+
+    if (db.removedOrgs.length) {
+      db.removedOrgs = db.removedOrgs.map(function (o) { return ORG_RENAME_MAP[o] || o; });
+    }
+
+    // The dropped org no longer has a roster slot at all (unlike a manually removed org),
+    // so purge its logins/pending invites the same way removeOrgFromPortal does, keeping historical records.
+    ORG_RENAME_DROPPED.forEach(function (org) {
+      db.accounts = db.accounts.filter(function (a) { return !(a.role === "grantee" && a.org === org); });
+      db.invites = db.invites.filter(function (i) { return !(i.role === "grantee" && i.org === org && !i.usedAt); });
+    });
+
+    db.orgRenameMigrated = true;
+    saveDB(db);
+  })();
+
   var session = loadSession();
   if (session && session.role === "partner") { clearSession(); session = null; }
+  if (session && session.role === "grantee") {
+    if (ORG_RENAME_MAP[session.org]) { session.org = ORG_RENAME_MAP[session.org]; saveSession(session); }
+    else if (ORG_RENAME_DROPPED.indexOf(session.org) !== -1) { clearSession(); session = null; }
+  }
 
   /* ============================= UTIL ============================= */
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]; }); }
+  function bindActivatable(el, handler) {
+    el.addEventListener("click", handler);
+    el.addEventListener("keydown", function (e) {
+      if (e.target !== el) return;
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handler(e); }
+    });
+  }
   function initials(name) {
     var parts = String(name).trim().split(/\s+/);
     return ((parts[0] || "")[0] || "") .toUpperCase()+ ((parts[1] || "")[0] || "").toUpperCase();
@@ -2454,16 +2534,12 @@
   function isAdminAllowedEmail(email) {
     return ADMIN_ALLOWED_EMAILS.indexOf(email.toLowerCase()) !== -1;
   }
-  function findAccount(email, password, role) {
+  function findAccount(email, password) {
     return db.accounts.filter(function (a) {
-      return a.role === role && a.email.toLowerCase() === email.toLowerCase() && a.password === password;
+      return a.email.toLowerCase() === email.toLowerCase() && a.password === password;
     })[0] || null;
   }
 
-  $("#demo-fill-btn").addEventListener("click", function () {
-    $("#f-email").value = db.orgProfiles["Little Haiti Cultural Arts Center"].contactEmail;
-    $("#f-pass").value = "demo-password";
-  });
   $("#forgot-link").addEventListener("click", function () {
     toast("Password reset instructions would be emailed to you. (Demo only)");
   });
@@ -2472,58 +2548,16 @@
     e.preventDefault();
     var email = $("#f-email").value.trim();
     var pass = $("#f-pass").value;
-    var account = findAccount(email, pass, "grantee");
-    var errEl = $("#grantee-login-error");
+    var errEl = $("#login-error");
+    var account = findAccount(email, pass);
+    if (account && account.role === "admin" && !isAdminAllowedEmail(email)) account = null;
     if (!account) {
       errEl.textContent = "That email and password don't match an account. Ask your program officer for an invite link.";
       errEl.style.display = "block";
       return;
     }
     errEl.style.display = "none";
-    session = { role: "grantee", org: account.org, email: account.email, name: account.name };
-    saveSession(session);
-    enterApp();
-  });
-
-  var loginTabs = [
-    { btn: $("#tab-grantee-btn"), pane: $("#pane-grantee") },
-    { btn: $("#tab-admin-btn"), pane: $("#pane-admin") }
-  ];
-  loginTabs.forEach(function (tab) {
-    tab.btn.addEventListener("click", function () {
-      loginTabs.forEach(function (t) {
-        t.btn.classList.toggle("active", t === tab);
-        t.pane.classList.toggle("active", t === tab);
-      });
-    });
-  });
-
-  $("#demo-fill-admin-btn").addEventListener("click", function () {
-    $("#fa-email").value = "operations@artsaccessmiami.org";
-    $("#fa-pass").value = "demo-password";
-  });
-  $("#forgot-link-admin").addEventListener("click", function () {
-    toast("Password reset instructions would be emailed to you. (Demo only)");
-  });
-
-  $("#login-form-admin").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var email = $("#fa-email").value.trim();
-    var pass = $("#fa-pass").value;
-    var errEl = $("#admin-login-error");
-    if (!isAdminAllowedEmail(email)) {
-      errEl.textContent = "Admin login is limited to approved Arts Access Miami staff emails.";
-      errEl.style.display = "block";
-      return;
-    }
-    var account = findAccount(email, pass, "admin");
-    if (!account) {
-      errEl.textContent = "That email and password don't match a staff account. Ask a current administrator for an invite link.";
-      errEl.style.display = "block";
-      return;
-    }
-    errEl.style.display = "none";
-    session = { role: "admin", org: "Arts Access Miami", email: account.email, name: account.name };
+    session = { role: account.role, org: account.role === "admin" ? "Arts Access Miami" : account.org, email: account.email, name: account.name };
     saveSession(session);
     enterApp();
   });
@@ -2636,7 +2670,6 @@
     $("#app-shell").removeAttribute("data-role");
     $("#login-screen").style.display = "flex";
     $("#f-email").value = ""; $("#f-pass").value = "";
-    $("#fa-email").value = ""; $("#fa-pass").value = "";
     toast("Signed out");
   });
 
@@ -2731,7 +2764,7 @@
     if (view === "dashboard") renderDashboard();
     if (view === "admin-dashboard") renderAdminDashboard();
     if (view === "grantees") renderGrantees();
-    if (view === "calendar") renderPortalCalendar();
+    if (view === "calendar") renderCalendarPage();
     if (view === "meetings") renderMeetings();
     if (view === "gallery") renderGallery();
     if (view === "feed") renderFeed();
@@ -3060,6 +3093,98 @@
     reader.readAsDataURL(file);
   });
 
+  function calEventRequestStatusChip(status) {
+    if (status === "approved") return '<span class="status-chip good"><span class="dot"></span>Approved</span>';
+    if (status === "denied") return '<span class="status-chip critical"><span class="dot"></span>Denied</span>';
+    return '<span class="status-chip warning"><span class="dot"></span>Pending</span>';
+  }
+
+  function renderCalendarPage() {
+    renderPortalCalendar();
+    $("#cal-new-event-btn").style.display = (session && session.role === "admin") ? "none" : "";
+    $("#cal-new-event-btn").textContent = "+ Request to add to calendar";
+
+    var canReview = isSuperAdmin();
+    $("#cal-event-requests-card").style.display = canReview ? "block" : "none";
+    if (canReview) {
+      var reqs = db.calendarEventRequests.filter(function (r) { return r.status === "pending"; })
+        .sort(function (a, b) { return a.submittedAt < b.submittedAt ? 1 : -1; });
+      $("#cal-event-requests-count").textContent = reqs.length + " pending";
+      $("#cal-event-requests-list").innerHTML = reqs.length ? reqs.map(function (r) {
+        var d = parseISO(r.date);
+        return '<div class="deadline-row">' +
+          '<div class="date-chip"><div class="mon">' + MONTHS_SHORT[d.getMonth()] + '</div><div class="day tnum">' + d.getDate() + '</div></div>' +
+          '<div class="row-main"><div class="row-title">' + esc(r.title) + '</div>' +
+          '<div class="row-sub">' + esc(r.org) + ' · requested by ' + esc(r.requestedByName) + (r.time ? ' · ' + fmtTime(r.time) : '') + (r.location ? ' · ' + esc(r.location) : '') + '</div>' +
+          (r.description ? '<div class="row-sub">' + esc(r.description) + '</div>' : '') +
+          (r.link ? '<div class="row-sub"><a href="' + esc(r.link) + '" target="_blank" rel="noopener">' + esc(r.link) + '</a></div>' : '') +
+          '</div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button type="button" class="btn btn-primary btn-sm" data-accept-cal-request="' + r.id + '">Accept</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm icon-btn-danger" data-decline-cal-request="' + r.id + '">Decline</button>' +
+          '</div>' +
+          '</div>';
+      }).join("") : '<div class="empty-state">No pending calendar requests.</div>';
+
+      $all("[data-accept-cal-request]", $("#cal-event-requests-list")).forEach(function (btn) {
+        btn.addEventListener("click", function () { acceptCalendarEventRequest(btn.getAttribute("data-accept-cal-request")); });
+      });
+      $all("[data-decline-cal-request]", $("#cal-event-requests-list")).forEach(function (btn) {
+        btn.addEventListener("click", function () { declineCalendarEventRequest(btn.getAttribute("data-decline-cal-request")); });
+      });
+    }
+
+    var showMyRequests = session && session.role === "grantee";
+    $("#cal-my-requests-card").style.display = showMyRequests ? "block" : "none";
+    if (showMyRequests) {
+      var myReqs = db.calendarEventRequests.filter(function (r) { return r.org === session.org; })
+        .sort(function (a, b) { return a.submittedAt < b.submittedAt ? 1 : -1; });
+      $("#cal-my-requests-list").innerHTML = myReqs.length ? myReqs.map(function (r) {
+        var d = parseISO(r.date);
+        return '<div class="deadline-row">' +
+          '<div class="date-chip"><div class="mon">' + MONTHS_SHORT[d.getMonth()] + '</div><div class="day tnum">' + d.getDate() + '</div></div>' +
+          '<div class="row-main"><div class="row-title">' + esc(r.title) + '</div>' +
+          '<div class="row-sub">' + (r.time ? fmtTime(r.time) + ' · ' : '') + esc(r.location) + '</div>' +
+          '</div>' +
+          calEventRequestStatusChip(r.status) +
+          '</div>';
+      }).join("") : '<div class="empty-state">You haven\'t requested any calendar events yet.</div>';
+    }
+  }
+
+  function acceptCalendarEventRequest(id) {
+    if (!isSuperAdmin()) return;
+    var r = db.calendarEventRequests.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    db.events.push({
+      id: "e" + Date.now(),
+      title: r.title,
+      type: "event",
+      date: r.date,
+      time: r.time,
+      location: r.location,
+      description: r.description,
+      org: r.org,
+      registrationLink: r.link,
+      visibility: "public",
+      flyer: null
+    });
+    r.status = "approved";
+    saveDB(db);
+    toast(r.title + " added to the calendar");
+    renderCalendarPage();
+  }
+
+  function declineCalendarEventRequest(id) {
+    if (!isSuperAdmin()) return;
+    var r = db.calendarEventRequests.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    r.status = "denied";
+    saveDB(db);
+    toast("Request declined");
+    renderCalendarPage();
+  }
+
   function prepareEventModal(defaultDate) {
     $("#event-form").reset();
     pendingEventFlyer = null;
@@ -3080,7 +3205,47 @@
     $("#ev-date").value = defaultDate || todayISO(0);
     toggleEventExtraFields();
   }
-  $("#cal-new-event-btn").addEventListener("click", function () { prepareEventModal(todayISO(0)); openModal("add-event"); });
+  $("#cal-new-event-btn").addEventListener("click", function () {
+    if (session && session.role === "admin") {
+      prepareEventModal(todayISO(0));
+      openModal("add-event");
+    } else {
+      $("#req-ev-title").value = ""; $("#req-ev-date").value = todayISO(0);
+      $("#req-ev-time-hour").value = "9"; $("#req-ev-time-minute").value = "0"; $("#req-ev-time-ampm").value = "AM";
+      $("#req-ev-location").value = ""; $("#req-ev-desc").value = ""; $("#req-ev-link").value = "";
+      openModal("request-event");
+    }
+  });
+
+  $("#request-event-save-btn").addEventListener("click", function () {
+    var title = $("#req-ev-title").value.trim();
+    var date = $("#req-ev-date").value;
+    var hour12 = parseInt($("#req-ev-time-hour").value, 10);
+    var minute = parseInt($("#req-ev-time-minute").value, 10);
+    var ampm = $("#req-ev-time-ampm").value;
+    var location = $("#req-ev-location").value.trim();
+    if (!title || !date || !location) { toast("Title, date, and location are required"); return; }
+    if (isNaN(hour12) || hour12 < 1 || hour12 > 12 || isNaN(minute) || minute < 0 || minute > 59) { toast("Enter a valid time"); return; }
+    var hour24 = ampm === "PM" ? (hour12 === 12 ? 12 : hour12 + 12) : (hour12 === 12 ? 0 : hour12);
+    var time = (hour24 < 10 ? "0" : "") + hour24 + ":" + (minute < 10 ? "0" : "") + minute;
+    db.calendarEventRequests.push({
+      id: "cer" + Date.now(),
+      org: session.org,
+      title: title,
+      date: date,
+      time: time,
+      location: location,
+      description: $("#req-ev-desc").value.trim(),
+      link: $("#req-ev-link").value.trim(),
+      requestedByName: session.name,
+      requestedByEmail: session.email,
+      submittedAt: todayISO(0),
+      status: "pending"
+    });
+    saveDB(db);
+    closeModal("request-event");
+    toast("Request sent to Arts Access Miami");
+  });
 
   $("#day-add-btn").addEventListener("click", function () {
     closeModal("day-detail");
@@ -3121,10 +3286,10 @@
     closeModal("add-event");
     toast(isAdmin ? "Added to the calendar" : "Submitted for admin approval — it will post once approved");
     updateApprovalsBadge();
-    if ($("#view-calendar").classList.contains("active")) renderPortalCalendar();
     if ($("#view-dashboard").classList.contains("active")) renderDashboard();
     if ($("#view-admin-dashboard").classList.contains("active")) renderAdminDashboard();
     if ($("#view-admin-accounts").classList.contains("active")) renderApprovals();
+    if ($("#view-calendar").classList.contains("active")) renderPortalCalendar();
   });
 
   /* ============================= GALLERY ============================= */
@@ -3416,28 +3581,26 @@
       (contactRegions.length ? '<br/><span class="sub">' + contactRegions.map(function (r) { return esc(r) + " Region"; }).join(", ") + '</span>' : "");
   }
 
+  function canEditOrgProfile(org) {
+    return isSuperAdmin() || (!!session && session.role === "grantee" && session.orgAdmin && org === session.org);
+  }
   function directoryCardHtml(org) {
     var p = db.orgProfiles[org];
     var regions = ORG_REGIONS[org] || [];
     var visibleContacts = db.orgContacts.filter(function (c) { return c.org === org && c.visible; });
-    var previewContacts = visibleContacts.slice(0, 1);
-    var moreCount = visibleContacts.length - previewContacts.length;
-    var contactHtml = previewContacts.length ? previewContacts.map(contactRowHtml).join("<br/><br/>") : "This organization hasn't published a public contact yet.";
-    var expandBtn = moreCount > 0
-      ? '<button type="button" class="btn btn-ghost btn-sm" data-open-org-contacts="' + esc(org) + '" style="margin-top:8px;padding:4px 10px;font-size:11.5px;">+' + moreCount + ' more contact' + (moreCount === 1 ? "" : "s") + ' →</button>'
-      : '';
+    var contactHtml = visibleContacts.length ? visibleContacts.map(contactRowHtml).join("<br/><br/>") : "This organization hasn't published a public contact yet.";
     return '<div class="card directory-card">' +
       '<div class="directory-card-head">' +
       '<div class="chat-thread-avatar" style="width:40px;height:40px;font-size:13px;flex-shrink:0;">' + initials(org) + '</div>' +
       '<div style="flex:1;min-width:0;"><h3 style="font-size:15px;">' + esc(org) + '</h3>' +
       '<div class="directory-card-tags">' + tierBadge(org) + regions.map(function (r) { return '<span class="tag-chip">' + esc(r) + '</span>'; }).join("") + '</div>' +
       '</div>' +
-      '<button type="button" class="btn btn-ghost btn-sm nav-admin" data-edit-org-profile="' + esc(org) + '">Edit profile</button>' +
+      (canEditOrgProfile(org) ? '<button type="button" class="btn btn-ghost btn-sm" data-edit-org-profile="' + esc(org) + '">Edit profile</button>' : '') +
       '</div>' +
       '<div class="directory-card-body">' +
       '<div class="directory-col">' +
       '<div class="directory-label">Contact' + (visibleContacts.length > 1 ? "s" : "") + '</div>' +
-      '<div class="directory-value">' + contactHtml + expandBtn + '</div>' +
+      '<div class="directory-value">' + contactHtml + '</div>' +
       '<div class="directory-label">Web &amp; social</div>' +
       '<div class="directory-value"><a href="' + esc(p.website) + '" target="_blank" rel="noopener">' + esc(p.website.replace(/^https?:\/\//, "")) + '</a>' +
       (p.social.length ? " · " + p.social.map(function (s) { return '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.label) + '</a>'; }).join(" · ") : "") + '</div>' +
@@ -3456,6 +3619,28 @@
       '</div>' +
       '</div>' +
       '</div>';
+  }
+
+  function directoryCompactCardHtml(org) {
+    var regions = ORG_REGIONS[org] || [];
+    var p = db.orgProfiles[org];
+    var programPreview = (p.programs || []).slice(0, 2).join(", ") + (p.programs.length > 2 ? "…" : "");
+    return '<div class="card org-card" style="cursor:pointer;" tabindex="0" role="button" aria-label="View directory profile for ' + esc(org) + '" data-open-directory-profile="' + esc(org) + '">' +
+      '<div class="org-avatar">' + initials(org) + '</div>' +
+      '<div class="org-name">' + esc(org) + '</div>' +
+      '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">' + tierBadge(org) + regions.map(function (r) { return '<span class="tag-chip">' + esc(r) + '</span>'; }).join("") + '</div>' +
+      '<div class="sub" style="margin-top:10px;">' + esc(programPreview) + '</div>' +
+      '</div>';
+  }
+
+  var profileModalOrigin = null;
+  function openDirectoryProfile(org) {
+    profileModalOrigin = "directory";
+    $("#grantee-profile-body").innerHTML = directoryCardHtml(org);
+    $all("[data-edit-org-profile]", $("#grantee-profile-body")).forEach(function (btn) {
+      btn.addEventListener("click", function () { openEditOrgProfile(btn.getAttribute("data-edit-org-profile")); });
+    });
+    openModal("grantee-profile");
   }
 
   function renderDirectory() {
@@ -3506,14 +3691,11 @@
 
     $("#directory-count").textContent = orgs.length + " organization" + (orgs.length === 1 ? "" : "s");
     $("#directory-grid").innerHTML = orgs.length
-      ? orgs.map(directoryCardHtml).join("")
-      : '<div class="empty-state">No organizations match your search.</div>';
+      ? orgs.map(directoryCompactCardHtml).join("")
+      : '<div class="empty-state" style="grid-column:1/-1;">No organizations match your search.</div>';
 
-    $all("[data-open-org-contacts]", $("#directory-grid")).forEach(function (btn) {
-      btn.addEventListener("click", function () { openOrgContactsModal(btn.getAttribute("data-open-org-contacts")); });
-    });
-    $all("[data-edit-org-profile]", $("#directory-grid")).forEach(function (btn) {
-      btn.addEventListener("click", function () { openEditOrgProfile(btn.getAttribute("data-edit-org-profile")); });
+    $all("[data-open-directory-profile]", $("#directory-grid")).forEach(function (card) {
+      bindActivatable(card, function () { openDirectoryProfile(card.getAttribute("data-open-directory-profile")); });
     });
   }
 
@@ -3540,7 +3722,7 @@
   $("#eop-save-btn").addEventListener("click", function () {
     var org = editingOrgProfileOrg;
     var p = org ? db.orgProfiles[org] : null;
-    if (!p) return;
+    if (!p || !canEditOrgProfile(org)) return;
     p.website = $("#eop-website").value.trim();
     p.ages = $("#eop-ages").value.trim();
     p.programs = $("#eop-programs").value.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
@@ -3553,17 +3735,12 @@
     saveDB(db);
     closeModal("edit-org-profile");
     toast("Organization profile updated");
-    renderDirectory();
+    if ($("#view-directory").classList.contains("active")) renderDirectory();
+    if ($("#modal-grantee-profile").classList.contains("active")) {
+      if (profileModalOrigin === "compliance") openGranteeProfile(org);
+      else openDirectoryProfile(org);
+    }
   });
-
-  function openOrgContactsModal(org) {
-    var visibleContacts = db.orgContacts.filter(function (c) { return c.org === org && c.visible; });
-    $("#org-contacts-modal-title").textContent = org + " — Staff Contacts";
-    $("#org-contacts-modal-body").innerHTML = visibleContacts.length
-      ? visibleContacts.map(function (c) { return '<div class="contact-card" style="padding:14px 0;"><div class="contact-avatar">' + initials(c.name) + '</div><div>' + contactRowHtml(c) + '</div></div>'; }).join("")
-      : '<div class="empty-state">This organization hasn’t published a public contact yet.</div>';
-    openModal("org-contacts-modal");
-  }
 
   $("#directory-search").addEventListener("input", renderDirectory);
   $("#directory-tier-filter").addEventListener("change", renderDirectory);
@@ -3594,20 +3771,25 @@
     }
     return reportWorkingFilesByStage[stage];
   }
-  function reviewStatusChip(sub, stage) {
+  function reportRequiredItemNames(org, stage) {
+    var docExtras = reportExtrasFor(org, stage.key).filter(function (x) { return x.type === "document"; });
+    return stage.requiredItems.concat(docExtras.map(function (x) { return x.title; }));
+  }
+  function reviewStatusChip(sub, stage, org) {
     if (!sub || !sub.submittedAt) return null;
     var itemReviews = sub.itemReviews || {};
-    var uploadedItems = stage.requiredItems.filter(function (item) { return sub.itemFiles && sub.itemFiles[item]; });
+    var requiredNames = reportRequiredItemNames(org, stage);
+    var uploadedItems = requiredNames.filter(function (item) { return sub.itemFiles && sub.itemFiles[item]; });
     var rejectedItems = uploadedItems.filter(function (item) { return itemReviews[item] === "rejected"; });
     if (rejectedItems.length) return { label: "Changes Requested", tone: "critical" };
     var approvedItems = uploadedItems.filter(function (item) { return itemReviews[item] === "approved"; });
-    if (uploadedItems.length === stage.requiredItems.length && approvedItems.length === uploadedItems.length) return { label: "Approved", tone: "good" };
+    if (uploadedItems.length === requiredNames.length && approvedItems.length === uploadedItems.length) return { label: "Approved", tone: "good" };
     return { label: "Pending Review", tone: "warning" };
   }
   function reportStatus(stageKey) {
     var sub = getSubmission(session.org, stageKey);
     var stage = REPORT_STAGES.filter(function (s) { return s.key === stageKey; })[0];
-    if (sub && sub.submittedAt) return reviewStatusChip(sub, stage);
+    if (sub && sub.submittedAt) return reviewStatusChip(sub, stage, session.org);
     return statusFor(stage.due);
   }
 
@@ -3625,15 +3807,16 @@
     });
   }
 
-  function reportItemsHave(sub, stage) {
+  function reportItemsHave(sub, stage, org) {
     if (!sub || !sub.itemFiles) return 0;
-    return stage.requiredItems.filter(function (item) { return !!sub.itemFiles[item]; }).length;
+    return reportRequiredItemNames(org, stage).filter(function (item) { return !!sub.itemFiles[item]; }).length;
   }
   function reportCompleteness(org, stageKey) {
     var sub = getSubmission(org, stageKey);
     var stage = REPORT_STAGES.filter(function (s) { return s.key === stageKey; })[0];
-    var have = reportItemsHave(sub, stage);
-    return Math.max(0, Math.min(100, Math.round((have / stage.requiredItems.length) * 100)));
+    var have = reportItemsHave(sub, stage, org);
+    var total = reportRequiredItemNames(org, stage).length;
+    return Math.max(0, Math.min(100, Math.round((have / total) * 100)));
   }
 
   function reportStageAggregate(stageKey) {
@@ -3674,15 +3857,16 @@
       var sub = getSubmission(org, stage.key);
       var isSubmitted = !!(sub && sub.submittedAt);
       if (isSubmitted) submittedCount++;
-      var st = isSubmitted ? reviewStatusChip(sub, stage) : statusFor(stage.due);
+      var st = isSubmitted ? reviewStatusChip(sub, stage, org) : statusFor(stage.due);
       var pct = reportCompleteness(org, stage.key);
-      var fileCount = reportItemsHave(sub, stage);
+      var fileCount = reportItemsHave(sub, stage, org);
+      var requiredCount = reportRequiredItemNames(org, stage).length;
       return '<div class="org-row" style="cursor:pointer;" data-view-org-report="' + esc(org) + '">' +
         '<div class="org-avatar">' + initials(org) + '</div>' +
         '<div class="org-main"><div class="row-title">' + esc(org) + ' ' + tierBadge(org) + '</div>' +
         '<div class="row-sub">' + (isSubmitted ? "Submitted " + fmtDateLong(sub.submittedAt) : "Not yet submitted") + '</div>' +
         '<div class="materials-meter"><div class="materials-bar"><div class="materials-fill" style="width:' + pct + '%;"></div></div>' +
-        '<span class="materials-pct tnum">' + pct + '% of materials (' + fileCount + '/' + stage.requiredItems.length + ')</span></div>' +
+        '<span class="materials-pct tnum">' + pct + '% of materials (' + fileCount + '/' + requiredCount + ')</span></div>' +
         '</div>' +
         '<span class="status-chip ' + st.tone + '"><span class="dot"></span>' + st.label + '</span>' +
         '</div>';
@@ -3697,12 +3881,20 @@
   var currentReportDetailOrg = null;
   var currentReportDetailStageKey = null;
 
+  function reportExtrasFor(org, stageKey) {
+    return db.reportExtras.filter(function (x) { return x.org === org && x.stage === stageKey; });
+  }
+
   function openReportDetail(org, stageKey) {
     var stage = REPORT_STAGES.filter(function (s) { return s.key === stageKey; })[0];
     var sub = getSubmission(org, stageKey);
     var itemFiles = sub && sub.itemFiles ? sub.itemFiles : {};
-    var have = reportItemsHave(sub, stage);
-    var missingCount = Math.max(0, stage.requiredItems.length - have);
+    var orgExtras = reportExtrasFor(org, stageKey);
+    var docExtras = orgExtras.filter(function (x) { return x.type === "document"; });
+    var otherExtras = orgExtras.filter(function (x) { return x.type !== "document"; });
+    var allItems = stage.requiredItems.concat(docExtras.map(function (x) { return x.title; }));
+    var have = allItems.filter(function (item) { return itemFiles[item]; }).length;
+    var missingCount = Math.max(0, allItems.length - have);
     currentReportDetailOrg = org;
     currentReportDetailStageKey = stageKey;
 
@@ -3712,7 +3904,7 @@
 
     var html = "";
     if (sub) {
-      var rchip = reviewStatusChip(sub, stage);
+      var rchip = reviewStatusChip(sub, stage, org);
       html += '<p class="sub" style="margin-bottom:8px;">Submitted ' + fmtDateLong(sub.submittedAt) + '</p>' +
         (rchip ? '<span class="status-chip ' + rchip.tone + '"><span class="dot"></span>' + esc(rchip.label) + '</span>' : '') +
         (sub.reviewNote ? '<p class="field-hint" style="margin-top:8px;">Note to organization: ' + esc(sub.reviewNote) + '</p>' : '') +
@@ -3722,9 +3914,9 @@
     }
 
     html += '<h4 style="font-size:13px;margin-bottom:2px;">Required materials</h4>' +
-      '<p class="sub" style="margin-bottom:10px;">' + (stage.requiredItems.length - missingCount) + ' of ' + stage.requiredItems.length + ' provided' +
+      '<p class="sub" style="margin-bottom:10px;">' + (allItems.length - missingCount) + ' of ' + allItems.length + ' provided' +
       (missingCount ? " · " + missingCount + " missing" : " · complete") + '</p>' +
-      '<div class="req-checklist">' + stage.requiredItems.map(function (item) {
+      '<div class="req-checklist">' + allItems.map(function (item) {
         var f = itemFiles[item];
         var got = !!f;
         var reviewState = got ? (itemReviews[item] || "") : "";
@@ -3748,6 +3940,40 @@
         '<button type="button" class="btn btn-secondary btn-sm" id="report-review-note-save-btn">Save note</button>';
     }
 
+    if (otherExtras.length) {
+      html += '<h4 style="font-size:13px;margin:18px 0 8px;">Materials &amp; tasks from Arts Access Miami</h4>' +
+        otherExtras.map(function (x) {
+          var actionHtml = x.type === "material"
+            ? (x.link ? '<a href="' + esc(x.link) + '" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">View</a>' : '')
+            : '<span class="status-chip ' + (x.done ? "good" : "warning") + '"><span class="dot"></span>' + (x.done ? "Done" : "Not done") + '</span>';
+          return '<div class="req-item" style="flex-wrap:wrap;">' +
+            '<div style="flex:1;min-width:0;"><strong>' + esc(x.title) + '</strong>' + (x.description ? '<div class="row-sub">' + esc(x.description) + '</div>' : '') + '</div>' +
+            actionHtml +
+            (isSuperAdmin() ? '<button type="button" class="icon-btn icon-btn-danger" data-del-report-extra="' + x.id + '" aria-label="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0v13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7" stroke-linecap="round"/></svg></button>' : '') +
+            '</div>';
+        }).join("");
+    }
+    if (docExtras.length && isSuperAdmin()) {
+      html += '<p class="field-hint" style="margin-top:4px;">Custom required documents can be removed below.</p>' +
+        docExtras.map(function (x) {
+          return '<div class="row-sub" style="display:flex;align-items:center;gap:8px;">' + esc(x.title) +
+            '<button type="button" class="btn btn-ghost btn-sm icon-btn-danger" data-del-report-extra="' + x.id + '">Remove</button></div>';
+        }).join("");
+    }
+
+    if (isSuperAdmin()) {
+      html += '<div class="card card-pad" style="margin-top:16px;background:var(--paper-sunken);">' +
+        '<h4 style="font-size:13px;margin-bottom:10px;">Add item for ' + esc(org) + '</h4>' +
+        '<div class="field-row">' +
+        '<div class="field"><label for="rx-type">Type</label><select id="rx-type"><option value="material">Material (reference link)</option><option value="document">Document (org must upload)</option><option value="task">Task (to-do)</option></select></div>' +
+        '<div class="field"><label for="rx-title">Title</label><input id="rx-title" placeholder="e.g. Updated budget narrative" /></div>' +
+        '</div>' +
+        '<div class="field"><label for="rx-desc">Description (optional)</label><input id="rx-desc" /></div>' +
+        '<div class="field" id="rx-link-field"><label for="rx-link">Link (optional)</label><input id="rx-link" type="url" placeholder="https://…" /></div>' +
+        '<button type="button" class="btn btn-secondary btn-sm" id="rx-add-btn">Add item</button>' +
+        '</div>';
+    }
+
     $("#report-detail-body").innerHTML = html;
 
     $all("[data-open-report-item]", $("#report-detail-body")).forEach(function (el) {
@@ -3769,6 +3995,36 @@
         s.reviewNote = $("#report-review-note").value.trim();
         saveDB(db);
         toast("Note saved");
+      });
+    }
+    $all("[data-del-report-extra]", $("#report-detail-body")).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (!isSuperAdmin()) return;
+        db.reportExtras = db.reportExtras.filter(function (x) { return x.id !== btn.getAttribute("data-del-report-extra"); });
+        saveDB(db);
+        toast("Item removed");
+        openReportDetail(org, stageKey);
+      });
+    });
+    if (isSuperAdmin()) {
+      $("#rx-add-btn").addEventListener("click", function () {
+        var title = $("#rx-title").value.trim();
+        if (!title) { toast("Title is required"); return; }
+        db.reportExtras.push({
+          id: "rx" + Date.now(),
+          org: org,
+          stage: stageKey,
+          type: $("#rx-type").value,
+          title: title,
+          description: $("#rx-desc").value.trim(),
+          link: $("#rx-link").value.trim(),
+          done: false,
+          createdAt: todayISO(0)
+        });
+        saveDB(db);
+        toast("Added for " + org);
+        notifyOrg(org, "New item for " + stage.label, 'Arts Access Miami added "' + title + '" to your ' + stage.label + '.');
+        openReportDetail(org, stageKey);
       });
     }
     openModal("report-detail");
@@ -3838,8 +4094,11 @@
       '<button type="button" class="btn btn-primary" id="report-submit-btn">' + (sub && sub.submittedAt ? "Update submission" : "Submit " + esc(stage.label)) + '</button>' +
       '</div>';
 
+    html += '<div id="report-extras-block"></div>';
+
     $("#report-panes").innerHTML = html;
     renderReportChecklist(stage);
+    renderReportExtrasBlock(stage);
 
     $("#report-file-input").addEventListener("change", function (e) {
       var file = e.target.files && e.target.files[0];
@@ -3886,12 +4145,41 @@
     });
   }
 
+  function renderReportExtrasBlock(stage) {
+    var container = $("#report-extras-block");
+    if (!container) return;
+    var otherExtras = reportExtrasFor(session.org, stage.key).filter(function (x) { return x.type !== "document"; });
+    container.innerHTML = otherExtras.length
+      ? '<div class="card card-pad" style="margin-top:16px;"><h4 style="font-size:13px;margin-bottom:10px;">Materials &amp; tasks from Arts Access Miami</h4>' +
+        otherExtras.map(function (x) {
+          var actionHtml = x.type === "material"
+            ? (x.link ? '<a href="' + esc(x.link) + '" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">View</a>' : '')
+            : '<button type="button" class="btn btn-sm ' + (x.done ? "btn-secondary" : "btn-primary") + '" data-toggle-report-task="' + x.id + '">' + (x.done ? "Mark not done" : "Mark as done") + '</button>';
+          return '<div class="req-item ' + (x.type === "task" && x.done ? "got" : "") + '" style="flex-wrap:wrap;">' +
+            '<div style="flex:1;min-width:0;"><strong>' + esc(x.title) + '</strong>' + (x.description ? '<div class="row-sub">' + esc(x.description) + '</div>' : '') + '</div>' +
+            actionHtml +
+            '</div>';
+        }).join("") + '</div>'
+      : '';
+
+    $all("[data-toggle-report-task]", container).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var x = db.reportExtras.filter(function (r) { return r.id === btn.getAttribute("data-toggle-report-task"); })[0];
+        if (!x) return;
+        x.done = !x.done;
+        saveDB(db);
+        renderReportExtrasBlock(stage);
+      });
+    });
+  }
+
   var currentReportUploadItem = null;
   function renderReportChecklist(stage) {
     var itemFiles = getWorkingItemFiles(stage.key);
     var existingSub = getSubmission(session.org, stage.key);
     var itemReviews = existingSub && existingSub.itemReviews ? existingSub.itemReviews : {};
-    $("#report-checklist").innerHTML = stage.requiredItems.map(function (item) {
+    var extraDocTitles = reportExtrasFor(session.org, stage.key).filter(function (x) { return x.type === "document"; }).map(function (x) { return x.title; });
+    $("#report-checklist").innerHTML = stage.requiredItems.concat(extraDocTitles).map(function (item) {
       var f = itemFiles[item];
       var got = !!f;
       var reviewState = got ? (itemReviews[item] || "") : "";
@@ -4182,7 +4470,7 @@
       var openDl = db.events.filter(function (e) { return e.type === "deadline" && (e.org === org || e.org === "All grantees") && daysDiff(e.date) >= 0; }).length;
       var overdueDl = db.events.filter(function (e) { return e.type === "deadline" && e.org === org && daysDiff(e.date) < 0; }).length;
       var postCount = db.posts.filter(function (p) { return p.org === org; }).length;
-      return '<div class="card org-card" style="cursor:pointer;" data-open-grantee-profile="' + esc(org) + '"><div class="org-avatar">' + initials(org) + '</div>' +
+      return '<div class="card org-card" style="cursor:pointer;" tabindex="0" role="button" aria-label="View grantee profile for ' + esc(org) + '" data-open-grantee-profile="' + esc(org) + '"><div class="org-avatar">' + initials(org) + '</div>' +
         '<div class="org-name">' + esc(org) + '</div>' +
         '<div style="margin-top:6px;">' + tierBadge(org) + '</div>' +
         '<div class="org-metrics">' +
@@ -4201,14 +4489,14 @@
       });
     });
     $all("[data-open-grantee-profile]", $("#org-card-grid")).forEach(function (card) {
-      card.addEventListener("click", function () { openGranteeProfile(card.getAttribute("data-open-grantee-profile")); });
+      bindActivatable(card, function () { openGranteeProfile(card.getAttribute("data-open-grantee-profile")); });
     });
   }
 
   function reportStatusForOrg(org, stageKey) {
     var stage = REPORT_STAGES.filter(function (s) { return s.key === stageKey; })[0];
     var sub = getSubmission(org, stageKey);
-    if (sub && sub.submittedAt) return reviewStatusChip(sub, stage);
+    if (sub && sub.submittedAt) return reviewStatusChip(sub, stage, org);
     return statusFor(stage.due);
   }
 
@@ -4222,6 +4510,7 @@
   }
 
   function openGranteeProfile(org) {
+    profileModalOrigin = "compliance";
     pendingRemoveOrgConfirm = null;
     var reportingHtml = REPORT_STAGES.map(function (stage) {
       var st = reportStatusForOrg(org, stage.key);
@@ -4266,9 +4555,6 @@
 
     $all("[data-edit-org-profile]", $("#grantee-profile-body")).forEach(function (btn) {
       btn.addEventListener("click", function () { openEditOrgProfile(btn.getAttribute("data-edit-org-profile")); });
-    });
-    $all("[data-open-org-contacts]", $("#grantee-profile-body")).forEach(function (btn) {
-      btn.addEventListener("click", function () { openOrgContactsModal(btn.getAttribute("data-open-org-contacts")); });
     });
     var removeOrgBtn = $("#remove-org-btn");
     if (removeOrgBtn) {
@@ -5061,8 +5347,13 @@
     });
   }
 
+  function mySettingsAccount() {
+    return db.accounts.filter(function (a) { return a.email.toLowerCase() === session.email.toLowerCase() && a.role === session.role; })[0] || null;
+  }
+
   function renderSettingsAccount() {
     var roleLabel = session.role === "admin" ? "Administrator" : "Grantee";
+    var acct = mySettingsAccount();
     $("#settings-account-info").innerHTML =
       '<div class="contact-card" style="padding:0;">' +
       '<div class="contact-avatar">' + initials(session.name) + '</div>' +
@@ -5070,7 +5361,56 @@
       '<div class="contact-role">' + esc(roleLabel) + ' · ' + esc(session.org) + (session.role === "grantee" ? " " + tierBadge(session.org) : "") + '</div>' +
       '<div class="contact-links"><a href="mailto:' + esc(session.email) + '">' + esc(session.email) + '</a></div></div>' +
       '</div>';
+    $("#acct-settings-name").value = acct ? acct.name : session.name;
+    $("#acct-settings-title").value = acct ? (acct.title || "") : "";
+    $("#acct-settings-phone").value = acct ? (acct.phone || "") : "";
+    $("#acct-settings-delete-btn").style.display = isSuperAdmin() ? "none" : "";
   }
+
+  $("#acct-settings-save-btn").addEventListener("click", function () {
+    var acct = mySettingsAccount();
+    if (!acct) return;
+    var name = $("#acct-settings-name").value.trim();
+    if (!name) { toast("Name is required"); return; }
+    acct.name = name;
+    acct.title = $("#acct-settings-title").value.trim();
+    acct.phone = $("#acct-settings-phone").value.trim();
+    saveDB(db);
+    session.name = name;
+    saveSession(session);
+    $("#sb-name").textContent = session.name;
+    $("#sb-avatar").textContent = initials(session.name) || "GP";
+    toast("Account updated");
+    renderSettingsAccount();
+  });
+
+  var pendingDeleteAccountConfirm = false;
+  $("#acct-settings-delete-btn").addEventListener("click", function () {
+    if (isSuperAdmin()) {
+      toast("The main operations account can't be deleted");
+      return;
+    }
+    if (!pendingDeleteAccountConfirm) {
+      pendingDeleteAccountConfirm = true;
+      this.textContent = "Click again to confirm deletion";
+      var btnEl = this;
+      setTimeout(function () {
+        if (pendingDeleteAccountConfirm) { pendingDeleteAccountConfirm = false; btnEl.textContent = "Delete my account"; }
+      }, 4000);
+      return;
+    }
+    var email = session.email, role = session.role;
+    db.accounts = db.accounts.filter(function (a) { return !(a.email.toLowerCase() === email.toLowerCase() && a.role === role); });
+    saveDB(db);
+    clearSession();
+    session = null;
+    reportWorkingFilesByStage = {};
+    $("#app-shell").classList.remove("active");
+    $("#app-shell").removeAttribute("data-role");
+    $("#login-screen").style.display = "flex";
+    $("#f-email").value = ""; $("#f-pass").value = "";
+    toast("Account deleted");
+  });
 
   /* ============================= ATTENDANCE (ADMIN) ============================= */
   function attendanceOrgsForEvent(event) {
